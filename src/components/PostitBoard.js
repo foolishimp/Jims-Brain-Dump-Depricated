@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import InfiniteCanvas from './InfiniteCanvas';
 import Postit from './Postit';
 import ArrowManager from './ArrowManager';
@@ -10,7 +10,14 @@ const PostitBoard = () => {
   const [arrowStart, setArrowStart] = useState(null);
   const boardRef = useRef(null);
 
+  const arrowManager = ArrowManager({ postits, arrowStart, setArrowStart, boardRef, zoom: 1 });
+
+  useEffect(() => {
+    console.log(`PostitBoard - Selected Postit: ${selectedPostit}, Arrow Start: ${JSON.stringify(arrowStart)}`);
+  }, [selectedPostit, arrowStart]);
+
   const handleDoubleClick = useCallback((event) => {
+    console.log('PostitBoard - DoubleClick event');
     if (!arrowStart) {
       const { clientX, clientY } = event;
       const newPostit = createNewPostit(clientX, clientY);
@@ -19,6 +26,7 @@ const PostitBoard = () => {
   }, [arrowStart]);
 
   const updatePostit = useCallback((id, updates) => {
+    console.log(`PostitBoard - Updating Postit ${id}`, updates);
     setPostits((prevPostits) =>
       prevPostits.map((postit) =>
         postit.id === id ? { ...postit, ...updates } : postit
@@ -27,14 +35,17 @@ const PostitBoard = () => {
   }, []);
 
   const handleSelectPostit = useCallback((id) => {
+    console.log(`PostitBoard - Selecting Postit ${id}`);
     setSelectedPostit(id);
   }, []);
 
   const handleStartConnection = useCallback((id, position) => {
+    console.log(`PostitBoard - Starting connection from Postit ${id} at ${position}`);
     setArrowStart({ id, position });
   }, []);
 
   const handleBoardClick = useCallback((event) => {
+    console.log('PostitBoard - Board Click event');
     if (arrowStart) {
       setArrowStart(null);
     } else {
@@ -65,16 +76,11 @@ const PostitBoard = () => {
                 isSelected={selectedPostit === postit.id}
                 onSelect={handleSelectPostit}
                 onStartConnection={handleStartConnection}
+                onPostitClick={arrowManager.handlePostitClick}
                 isDrawingArrow={!!arrowStart}
               />
             ))}
-            <ArrowManager
-              postits={postits}
-              arrowStart={arrowStart}
-              setArrowStart={setArrowStart}
-              boardRef={boardRef}
-              zoom={zoom}
-            />
+            {arrowManager.renderArrows()}
           </>
         )}
       </InfiniteCanvas>

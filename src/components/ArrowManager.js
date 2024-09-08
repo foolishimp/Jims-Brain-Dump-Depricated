@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Arrow from './Arrow';
 
-const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef }) => {
+const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) => {
   const [arrows, setArrows] = useState([]);
   const [tempArrow, setTempArrow] = useState(null);
 
@@ -26,11 +26,11 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef }) => {
       const rect = boardRef.current.getBoundingClientRect();
       setTempArrow(prev => ({
         ...prev,
-        endX: event.clientX - rect.left,
-        endY: event.clientY - rect.top,
+        endX: (event.clientX - rect.left) / zoom,
+        endY: (event.clientY - rect.top) / zoom,
       }));
     }
-  }, [tempArrow, boardRef]);
+  }, [tempArrow, boardRef, zoom]);
 
   const handlePostitClick = useCallback((event, postitId) => {
     if (arrowStart && arrowStart.id !== postitId) {
@@ -64,41 +64,32 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef }) => {
     }
   }, [boardRef, handleMouseMove]);
 
-  return (
-    <>
-      {arrows.map(arrow => (
-        <Arrow
-          key={arrow.id}
-          startX={arrow.startX}
-          startY={arrow.startY}
-          endX={arrow.endX}
-          endY={arrow.endY}
-        />
-      ))}
-      {tempArrow && (
-        <Arrow
-          startX={tempArrow.startX}
-          startY={tempArrow.startY}
-          endX={tempArrow.endX}
-          endY={tempArrow.endY}
-        />
-      )}
-      {postits.map(postit => (
-        <div
-          key={postit.id}
-          style={{
-            position: 'absolute',
-            left: postit.x,
-            top: postit.y,
-            width: 200,
-            height: 150,
-            pointerEvents: arrowStart ? 'auto' : 'none',
-          }}
-          onClick={(e) => handlePostitClick(e, postit.id)}
-        />
-      ))}
-    </>
-  );
+  return {
+    renderArrows: () => (
+      <>
+        {arrows.map(arrow => (
+          <Arrow
+            key={arrow.id}
+            startX={arrow.startX}
+            startY={arrow.startY}
+            endX={arrow.endX}
+            endY={arrow.endY}
+            zoom={zoom}
+          />
+        ))}
+        {tempArrow && (
+          <Arrow
+            startX={tempArrow.startX}
+            startY={tempArrow.startY}
+            endX={tempArrow.endX}
+            endY={tempArrow.endY}
+            zoom={zoom}
+          />
+        )}
+      </>
+    ),
+    handlePostitClick
+  };
 };
 
 export default ArrowManager;
