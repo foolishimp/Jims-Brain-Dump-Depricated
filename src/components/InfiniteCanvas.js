@@ -1,6 +1,20 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
-const InfiniteCanvas = ({ children, onDoubleClick, disablePanZoom }) => {
+const defaultParams = {
+  minZoom: 0.1,
+  maxZoom: 5,
+  zoomFactor: 0.05,
+  panFactor: 1,
+};
+
+const InfiniteCanvas = ({
+  children,
+  onDoubleClick,
+  disablePanZoom,
+  params = {}
+}) => {
+  const canvasParams = useMemo(() => ({ ...defaultParams, ...params }), [params]);
+
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -32,14 +46,16 @@ const InfiniteCanvas = ({ children, onDoubleClick, disablePanZoom }) => {
   const handleZoom = useCallback((e, delta, centerX, centerY) => {
     if (disablePanZoom) return;
     setZoom(prevZoom => {
-      const zoomFactor = 0.05; // Increased from 0.1 for faster zooming
-      const newZoom = Math.max(0.1, Math.min(5, prevZoom * (1 + delta * zoomFactor)));
+      const newZoom = Math.max(
+        canvasParams.minZoom,
+        Math.min(canvasParams.maxZoom, prevZoom * (1 + delta * canvasParams.zoomFactor))
+      );
       const newX = centerX - (centerX - position.x) * (newZoom / prevZoom);
       const newY = centerY - (centerY - position.y) * (newZoom / prevZoom);
       setPosition({ x: newX, y: newY });
       return newZoom;
     });
-  }, [disablePanZoom, position]);
+  }, [disablePanZoom, position, canvasParams]);
 
   const handleWheel = useCallback((e) => {
     if (disablePanZoom) return;
@@ -83,7 +99,7 @@ const InfiniteCanvas = ({ children, onDoubleClick, disablePanZoom }) => {
           position: 'absolute',
           top: 0,
           left: 0,
-          willChange: 'transform', // Optimizes performance for transforms
+          willChange: 'transform',
         }}
       >
         {typeof children === 'function' ? children({ zoom }) : children}
