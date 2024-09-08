@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import InfiniteCanvas from './InfiniteCanvas';
-import Postit from './Postit';
+import Postit from './Postit/Postit';
 import ArrowManager from './ArrowManager';
 import { createNewPostit } from '../utils/postit';
 
@@ -15,7 +15,7 @@ const PostitBoard = () => {
     if (!arrowStart) {
       const { clientX, clientY } = event;
       const newPostit = createNewPostit(clientX, clientY);
-      setPostits((prevPostits) => [...prevPostits, newPostit]);
+      setPostits((prevPostits) => [...prevPostits, { ...newPostit, isEditing: true }]);
     }
   }, [arrowStart]);
 
@@ -32,24 +32,19 @@ const PostitBoard = () => {
   }, []);
 
   const handleStartConnection = useCallback((id, position) => {
-    console.log(`PostitBoard - Starting connection from Postit ${id} at ${position}`);
     setArrowStart({ id, position });
   }, []);
 
   const handleBoardClick = useCallback((event) => {
     if (arrowStart) {
-      console.log("PostitBoard - Cancelling arrow drawing");
       setArrowStart(null);
     } else {
-      console.log("PostitBoard - Deselecting Postit");
       setSelectedPostit(null);
     }
   }, [arrowStart]);
 
   const handlePostitClick = useCallback((event, postitId) => {
-    console.log(`PostitBoard - Postit ${postitId} clicked`);
     if (arrowStart && arrowStart.id !== postitId) {
-      // Complete the arrow connection
       arrowManagerRef.current.handlePostitClick(event, postitId);
     } else {
       handleSelectPostit(postitId);

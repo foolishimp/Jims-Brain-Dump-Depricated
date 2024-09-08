@@ -1,11 +1,15 @@
-import React, { useState, useCallback, useImperativeHandle, forwardRef, useEffect } from 'react';
-import Arrow from './Arrow';
+import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
+import Arrow from './Arrow/Arrow';
 
 const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef, zoom, position }, ref) => {
   const [arrows, setArrows] = useState([]);
   const [tempArrow, setTempArrow] = useState(null);
 
   const getPostitConnectionPoints = useCallback((postit) => {
+    if (!postit || typeof postit.x !== 'number' || typeof postit.y !== 'number') {
+      console.error('Invalid postit:', postit);
+      return [];
+    }
     const width = 200;
     const height = 150;
     return [
@@ -18,6 +22,7 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
 
   const getClosestConnectionPoint = useCallback((postit, x, y) => {
     const points = getPostitConnectionPoints(postit);
+    if (points.length === 0) return null;
     return points.reduce((closest, point) => {
       const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
       return distance < closest.distance ? { ...point, distance } : closest;
@@ -25,19 +30,21 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
   }, [getPostitConnectionPoints]);
 
   const handleMouseMove = useCallback((event) => {
-    if (arrowStart) {
+    if (arrowStart && boardRef.current) {
       const startPostit = postits.find(p => p.id === arrowStart.id);
       if (startPostit) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - position.x) / zoom;
-        const y = (event.clientY - rect.top - position.y) / zoom;
+        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
+        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
-        setTempArrow({
-          startX: startPoint.x,
-          startY: startPoint.y,
-          endX: x,
-          endY: y,
-        });
+        if (startPoint) {
+          setTempArrow({
+            startX: startPoint.x,
+            startY: startPoint.y,
+            endX: x,
+            endY: y,
+          });
+        }
       }
     }
   }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint]);
@@ -57,23 +64,24 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
       event.stopPropagation();
       const startPostit = postits.find(p => p.id === arrowStart.id);
       const endPostit = postits.find(p => p.id === postitId);
-      if (startPostit && endPostit) {
+      if (startPostit && endPostit && boardRef.current) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - position.x) / zoom;
-        const y = (event.clientY - rect.top - position.y) / zoom;
+        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
+        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         const endPoint = getClosestConnectionPoint(endPostit, x, y);
-        const newArrow = {
-          id: Date.now().toString(),
-          startId: arrowStart.id,
-          endId: postitId,
-          startPosition: startPoint.position,
-          endPosition: endPoint.position,
-        };
-        setArrows(prev => [...prev, newArrow]);
-        setArrowStart(null);
-        setTempArrow(null);
-        console.log("New permanent arrow created:", newArrow);
+        if (startPoint && endPoint) {
+          const newArrow = {
+            id: Date.now().toString(),
+            startId: arrowStart.id,
+            endId: postitId,
+            startPosition: startPoint.position,
+            endPosition: endPoint.position,
+          };
+          setArrows(prev => [...prev, newArrow]);
+          setArrowStart(null);
+          setTempArrow(null);
+        }
       }
     }
   }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, setArrowStart]);
@@ -89,7 +97,9 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
       if (startPostit && endPostit) {
         const startPoint = getClosestConnectionPoint(startPostit, endPostit.x, endPostit.y);
         const endPoint = getClosestConnectionPoint(endPostit, startPostit.x, startPostit.y);
-        return { ...arrow, startPosition: startPoint.position, endPosition: endPoint.position };
+        if (startPoint && endPoint) {
+          return { ...arrow, startPosition: startPoint.position, endPosition: endPoint.position };
+        }
       }
       return arrow;
     }));
@@ -107,16 +117,18 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
         if (startPostit && endPostit) {
           const startPoint = getClosestConnectionPoint(startPostit, endPostit.x, endPostit.y);
           const endPoint = getClosestConnectionPoint(endPostit, startPostit.x, startPostit.y);
-          return (
-            <Arrow
-              key={arrow.id}
-              startX={startPoint.x}
-              startY={startPoint.y}
-              endX={endPoint.x}
-              endY={endPoint.y}
-              zoom={zoom}
-            />
-          );
+          if (startPoint && endPoint) {
+            return (
+              <Arrow
+                key={arrow.id}
+                startX={startPoint.x}
+                startY={startPoint.y}
+                endX={endPoint.x}
+                endY={endPoint.y}
+                zoom={zoom}
+              />
+            );
+          }
         }
         return null;
       })}

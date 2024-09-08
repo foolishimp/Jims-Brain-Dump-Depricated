@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useZoom } from '../hooks/useZoom';
+import useZoom from '../hooks/useZoom';
 
 const InfiniteCanvas = ({
   children,

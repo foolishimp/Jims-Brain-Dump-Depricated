@@ -1,42 +1,32 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 
-const defaultParams = {
-  minZoom: 0.1,
-  maxZoom: 5,
-  zoomFactor: 0.05,
-  panFactor: 1,
-};
-
-export const useZoom = (initialZoom = 1, initialPosition = { x: 0, y: 0 }, params = {}) => {
-  const zoomParams = useMemo(() => ({ ...defaultParams, ...params }), [params]);
+const useZoom = (initialZoom = 1, initialPosition = { x: 0, y: 0 }, zoomParams = {}) => {
   const [zoom, setZoom] = useState(initialZoom);
   const [position, setPosition] = useState(initialPosition);
 
-  const handleZoom = useCallback((delta, centerX, centerY) => {
-    setZoom(prevZoom => {
-      const newZoom = Math.max(
-        zoomParams.minZoom,
-        Math.min(zoomParams.maxZoom, prevZoom * (1 + delta * zoomParams.zoomFactor))
-      );
-      const newX = centerX - (centerX - position.x) * (newZoom / prevZoom);
-      const newY = centerY - (centerY - position.y) * (newZoom / prevZoom);
-      setPosition({ x: newX, y: newY });
-      return newZoom;
+  const handleZoom = useCallback((delta, clientX, clientY) => {
+    const factor = delta > 0 ? 1.1 : 0.9;
+    setZoom((prevZoom) => {
+      const newZoom = prevZoom * factor;
+      const minZoom = zoomParams.minZoom || 0.1;
+      const maxZoom = zoomParams.maxZoom || 5;
+      return Math.max(minZoom, Math.min(maxZoom, newZoom));
     });
-  }, [position, zoomParams]);
+
+    setPosition((prevPosition) => ({
+      x: clientX - (clientX - prevPosition.x) * factor,
+      y: clientY - (clientY - prevPosition.y) * factor,
+    }));
+  }, [zoomParams]);
 
   const handlePan = useCallback((deltaX, deltaY) => {
-    setPosition(prev => ({
-      x: prev.x + deltaX * zoomParams.panFactor,
-      y: prev.y + deltaY * zoomParams.panFactor,
+    setPosition((prevPosition) => ({
+      x: prevPosition.x + deltaX,
+      y: prevPosition.y + deltaY,
     }));
-  }, [zoomParams.panFactor]);
+  }, []);
 
-  return {
-    zoom,
-    position,
-    handleZoom,
-    handlePan,
-    setPosition,
-  };
+  return { zoom, position, handleZoom, handlePan };
 };
+
+export default useZoom;
