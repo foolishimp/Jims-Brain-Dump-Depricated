@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import Arrow from './Arrow';
 
-const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) => {
+const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef, zoom, transformMatrix }, ref) => {
   const [arrows, setArrows] = useState([]);
   const [tempArrow, setTempArrow] = useState(null);
 
@@ -29,11 +29,14 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
   const handleMouseMove = useCallback((event) => {
     if (tempArrow && boardRef.current) {
       const rect = boardRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / zoom;
+      const y = (event.clientY - rect.top) / zoom;
       setTempArrow(prev => ({
         ...prev,
-        endX: (event.clientX - rect.left) / zoom,
-        endY: (event.clientY - rect.top) / zoom,
+        endX: x,
+        endY: y,
       }));
+      console.log("ArrowManager - Temp arrow updated:", { startX: tempArrow.startX, startY: tempArrow.startY, endX: x, endY: y });
     }
   }, [tempArrow, boardRef, zoom]);
 
@@ -58,6 +61,10 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
     }
   }, [arrowStart, postits, tempArrow, setArrowStart]);
 
+  useImperativeHandle(ref, () => ({
+    handlePostitClick
+  }));
+
   useEffect(() => {
     const board = boardRef.current;
     if (board) {
@@ -69,7 +76,7 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
   }, [boardRef, handleMouseMove]);
 
   return (
-    <>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
       {arrows.map(arrow => (
         <Arrow
           key={arrow.id}
@@ -90,22 +97,8 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
           color="#ff0000"
         />
       )}
-      {postits.map(postit => (
-        <div
-          key={postit.id}
-          style={{
-            position: 'absolute',
-            left: postit.x,
-            top: postit.y,
-            width: 200,
-            height: 150,
-            pointerEvents: arrowStart ? 'auto' : 'none',
-          }}
-          onClick={(e) => handlePostitClick(e, postit.id)}
-        />
-      ))}
-    </>
+    </div>
   );
-};
+});
 
 export default ArrowManager;

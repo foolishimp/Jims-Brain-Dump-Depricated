@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-const VERSION = "Arrow v4.3";
+const VERSION = "Arrow v4.5";
 
 const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
   useEffect(() => {
@@ -11,11 +11,19 @@ const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
   const dy = endY - startY;
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
+  // Calculate the bounding box for the arrow
+  const minX = Math.min(startX, endX);
+  const minY = Math.min(startY, endY);
+  const maxX = Math.max(startX, endX);
+  const maxY = Math.max(startY, endY);
+  const width = maxX - minX;
+  const height = maxY - minY;
+
   const arrowHead = (
     <polygon
       points="-10,-5 0,0 -10,5"
       fill={color}
-      transform={`translate(${endX},${endY}) rotate(${angle}) scale(${1/zoom})`}
+      transform={`translate(${endX - minX},${endY - minY}) rotate(${angle})`}
     />
   );
 
@@ -23,19 +31,20 @@ const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
     <svg
       style={{
         position: 'absolute',
-        left: 0,
-        top: 0,
-        width: '100%',
-        height: '100%',
+        left: `${minX}px`,
+        top: `${minY}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        overflow: 'visible',
         pointerEvents: 'none',
         zIndex: 1000,
       }}
     >
       <line
-        x1={startX}
-        y1={startY}
-        x2={endX}
-        y2={endY}
+        x1={startX - minX}
+        y1={startY - minY}
+        x2={endX - minX}
+        y2={endY - minY}
         stroke={color}
         strokeWidth={2 / zoom}
       />

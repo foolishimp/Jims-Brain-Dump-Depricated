@@ -9,6 +9,7 @@ const PostitBoard = () => {
   const [selectedPostit, setSelectedPostit] = useState(null);
   const [arrowStart, setArrowStart] = useState(null);
   const boardRef = useRef(null);
+  const arrowManagerRef = useRef(null);
 
   const handleDoubleClick = useCallback((event) => {
     if (!arrowStart) {
@@ -47,16 +48,21 @@ const PostitBoard = () => {
 
   const handlePostitClick = useCallback((event, postitId) => {
     console.log(`PostitBoard - Postit ${postitId} clicked`);
-    // Add any additional logic for Postit clicks here
-  }, []);
+    if (arrowStart && arrowStart.id !== postitId) {
+      // Complete the arrow connection
+      arrowManagerRef.current.handlePostitClick(event, postitId);
+    } else {
+      handleSelectPostit(postitId);
+    }
+  }, [arrowStart, handleSelectPostit]);
 
   return (
-    <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%' }}>
+    <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <InfiniteCanvas 
         onDoubleClick={handleDoubleClick}
         disablePanZoom={!!arrowStart}
       >
-        {({ zoom }) => (
+        {({ zoom, transformMatrix }) => (
           <>
             {postits.map((postit) => (
               <Postit
@@ -72,11 +78,13 @@ const PostitBoard = () => {
               />
             ))}
             <ArrowManager
+              ref={arrowManagerRef}
               postits={postits}
               arrowStart={arrowStart}
               setArrowStart={setArrowStart}
               boardRef={boardRef}
               zoom={zoom}
+              transformMatrix={transformMatrix}
             />
           </>
         )}
