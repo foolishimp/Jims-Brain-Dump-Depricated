@@ -1,72 +1,71 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Arrow from './Arrow';
 
-const VERSION = "ArrowManager v2";
-
-const ArrowManager = ({ postits, arrowDragMode, onEndConnection, arrows }) => {
+const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef }) => {
+  const [arrows, setArrows] = useState([]);
   const [tempArrow, setTempArrow] = useState(null);
-  const containerRef = useRef(null);
 
   useEffect(() => {
-    console.log(`${VERSION} - Component mounted`);
-  }, []);
-
-  useEffect(() => {
-    console.log(`${VERSION} - ArrowDragMode changed:`, arrowDragMode);
-    if (arrowDragMode) {
-      const startPostit = postits.find(p => p.id === arrowDragMode.startId);
+    if (arrowStart) {
+      const startPostit = postits.find(p => p.id === arrowStart.id);
       if (startPostit) {
-        const startX = startPostit.x + (arrowDragMode.startPosition === 'left' ? 0 : arrowDragMode.startPosition === 'right' ? 200 : 100);
-        const startY = startPostit.y + (arrowDragMode.startPosition === 'top' ? 0 : arrowDragMode.startPosition === 'bottom' ? 150 : 75);
         setTempArrow({
-          startX,
-          startY,
-          endX: startX,
-          endY: startY,
+          startX: startPostit.x + (arrowStart.position === 'left' ? 0 : arrowStart.position === 'right' ? 200 : 100),
+          startY: startPostit.y + (arrowStart.position === 'top' ? 0 : arrowStart.position === 'bottom' ? 150 : 75),
+          endX: startPostit.x + 100,
+          endY: startPostit.y + 75,
         });
-        console.log(`${VERSION} - Temporary arrow set:`, { startX, startY });
       }
     } else {
       setTempArrow(null);
-      console.log(`${VERSION} - Temporary arrow cleared`);
     }
-  }, [arrowDragMode, postits]);
+  }, [arrowStart, postits]);
 
   const handleMouseMove = useCallback((event) => {
-    if (arrowDragMode && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const endX = event.clientX - rect.left;
-      const endY = event.clientY - rect.top;
+    if (tempArrow && boardRef.current) {
+      const rect = boardRef.current.getBoundingClientRect();
       setTempArrow(prev => ({
         ...prev,
-        endX,
-        endY,
+        endX: event.clientX - rect.left,
+        endY: event.clientY - rect.top,
       }));
-      console.log(`${VERSION} - Temporary arrow updated:`, { endX, endY });
     }
-  }, [arrowDragMode]);
+  }, [tempArrow, boardRef]);
+
+  const handlePostitClick = useCallback((event, postitId) => {
+    if (arrowStart && arrowStart.id !== postitId) {
+      event.stopPropagation();
+      const endPostit = postits.find(p => p.id === postitId);
+      if (endPostit && tempArrow) {
+        setArrows(prev => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            startId: arrowStart.id,
+            endId: postitId,
+            startX: tempArrow.startX,
+            startY: tempArrow.startY,
+            endX: endPostit.x + 100,
+            endY: endPostit.y + 75,
+          },
+        ]);
+        setArrowStart(null);
+      }
+    }
+  }, [arrowStart, postits, tempArrow, setArrowStart]);
 
   useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [handleMouseMove]);
-
-  console.log(`${VERSION} - Rendering, arrows:`, arrows, 'tempArrow:', tempArrow);
+    const board = boardRef.current;
+    if (board) {
+      board.addEventListener('mousemove', handleMouseMove);
+      return () => {
+        board.removeEventListener('mousemove', handleMouseMove);
+      };
+    }
+  }, [boardRef, handleMouseMove]);
 
   return (
-    <div 
-      ref={containerRef} 
-      style={{ 
-        width: '100%', 
-        height: '100%', 
-        position: 'absolute', 
-        top: 0, 
-        left: 0, 
-        pointerEvents: 'none',
-      }}
-    >
+    <>
       {arrows.map(arrow => (
         <Arrow
           key={arrow.id}
@@ -84,7 +83,21 @@ const ArrowManager = ({ postits, arrowDragMode, onEndConnection, arrows }) => {
           endY={tempArrow.endY}
         />
       )}
-    </div>
+      {postits.map(postit => (
+        <div
+          key={postit.id}
+          style={{
+            position: 'absolute',
+            left: postit.x,
+            top: postit.y,
+            width: 200,
+            height: 150,
+            pointerEvents: arrowStart ? 'auto' : 'none',
+          }}
+          onClick={(e) => handlePostitClick(e, postit.id)}
+        />
+      ))}
+    </>
   );
 };
 

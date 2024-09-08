@@ -1,7 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { parseMarkdown } from '../utils/postit';
-
-const VERSION = "Postit v3";
 
 const Postit = ({
   postit,
@@ -15,17 +13,8 @@ const Postit = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    console.log(`${VERSION} - Component mounted for postit:`, postit.id);
-  }, [postit.id]);
-
-  useEffect(() => {
-    console.log(`${VERSION} - Postit ${postit.id} - isSelected: ${isSelected}, isDrawingArrow: ${isDrawingArrow}`);
-  }, [postit.id, isSelected, isDrawingArrow]);
-
   const handleMouseDown = useCallback((event) => {
     event.stopPropagation();
-    console.log(`${VERSION} - Postit ${postit.id} - MouseDown, isDrawingArrow: ${isDrawingArrow}`);
     if (!isDrawingArrow) {
       onSelect(postit.id);
       setIsDragging(true);
@@ -46,26 +35,29 @@ const Postit = ({
   }, [isDragging, dragOffset, postit.id, updatePostit, zoom]);
 
   const handleMouseUp = useCallback(() => {
-    console.log(`${VERSION} - Postit ${postit.id} - MouseUp`);
     setIsDragging(false);
-  }, [postit.id]);
+  }, []);
 
   const handleDoubleClick = useCallback((event) => {
     event.stopPropagation();
-    console.log(`${VERSION} - Postit ${postit.id} - DoubleClick`);
     updatePostit(postit.id, { isEditing: true });
   }, [postit.id, updatePostit]);
 
+  const handleTextChange = useCallback((event) => {
+    updatePostit(postit.id, { text: event.target.value });
+  }, [postit.id, updatePostit]);
+
+  const handleBlur = useCallback(() => {
+    updatePostit(postit.id, { isEditing: false });
+  }, [postit.id, updatePostit]);
+
   const fontSize = useMemo(() => {
-    if (zoom >= 1) return 16;
-    if (zoom >= 0.5) return 14;
-    if (zoom >= 0.25) return 12;
-    if (zoom >= 0.1) return 10;
-    return 8;
+    const baseFontSize = 16;
+    return Math.max(baseFontSize * zoom, 8); // Ensure minimum font size of 8px
   }, [zoom]);
 
-  const width = 200;
-  const height = 150;
+  const width = 200 * zoom;
+  const height = 150 * zoom;
 
   const connectionPoints = [
     { x: width / 2, y: 0, position: 'top' },
@@ -76,7 +68,6 @@ const Postit = ({
 
   return (
     <div
-      className="postit"
       style={{
         position: 'absolute',
         left: `${postit.x}px`,
@@ -85,21 +76,25 @@ const Postit = ({
         height: `${height}px`,
         backgroundColor: '#ffff88',
         boxShadow: isSelected ? '0 0 10px rgba(0,0,0,0.5)' : '2px 2px 5px rgba(0,0,0,0.2)',
-        padding: '10px',
-        cursor: isDragging ? 'grabbing' : (isDrawingArrow ? 'crosshair' : 'grab'),
+        padding: `${10 * zoom}px`,
+        cursor: isDragging ? 'grabbing' : (isDrawingArrow ? 'default' : 'grab'),
         fontSize: `${fontSize}px`,
-        border: isSelected ? '2px solid #0077ff' : 'none',
+        border: isSelected ? `${2 * zoom}px solid #0077ff` : 'none',
+        pointerEvents: isDrawingArrow ? 'none' : 'auto',
+        transform: `scale(${1 / zoom})`,
+        transformOrigin: 'top left',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onDoubleClick={handleDoubleClick}
     >
       {postit.isEditing ? (
         <textarea
           value={postit.text}
-          onChange={(e) => updatePostit(postit.id, { text: e.target.value })}
-          onBlur={() => updatePostit(postit.id, { isEditing: false })}
+          onChange={handleTextChange}
+          onBlur={handleBlur}
           style={{
             width: '100%',
             height: '100%',
@@ -111,7 +106,9 @@ const Postit = ({
           autoFocus
         />
       ) : (
-        <div dangerouslySetInnerHTML={{ __html: parseMarkdown(postit.text) }} />
+        <div
+          dangerouslySetInnerHTML={{ __html: parseMarkdown(postit.text) }}
+        />
       )}
       {isSelected && !isDrawingArrow && connectionPoints.map((point, index) => (
         <div
@@ -129,7 +126,6 @@ const Postit = ({
           }}
           onMouseDown={(e) => {
             e.stopPropagation();
-            console.log(`${VERSION} - Postit ${postit.id} - Connection point clicked, position: ${point.position}`);
             onStartConnection(postit.id, point.position);
           }}
         />

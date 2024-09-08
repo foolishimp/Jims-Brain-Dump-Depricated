@@ -1,22 +1,13 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-
-const defaultParams = {
-  minZoom: 0.1,
-  maxZoom: 5,
-  zoomFactor: 0.05,
-  panFactor: 1,
-};
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useZoom } from '../hooks/useZoom';
 
 const InfiniteCanvas = ({
   children,
   onDoubleClick,
   disablePanZoom,
-  params = {}
+  zoomParams = {}
 }) => {
-  const canvasParams = useMemo(() => ({ ...defaultParams, ...params }), [params]);
-
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const { zoom, position, handleZoom, handlePan } = useZoom(1, { x: 0, y: 0 }, zoomParams);
   const [isDragging, setIsDragging] = useState(false);
   const [startDrag, setStartDrag] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
@@ -30,38 +21,21 @@ const InfiniteCanvas = ({
   }, [disablePanZoom, position]);
 
   const handleMouseMove = useCallback((e) => {
-    if (disablePanZoom) return;
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - startDrag.x,
-        y: e.clientY - startDrag.y
-      });
-    }
-  }, [disablePanZoom, isDragging, startDrag]);
+    if (disablePanZoom || !isDragging) return;
+    const deltaX = e.clientX - startDrag.x - position.x;
+    const deltaY = e.clientY - startDrag.y - position.y;
+    handlePan(deltaX, deltaY);
+  }, [disablePanZoom, isDragging, startDrag, position, handlePan]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
-  const handleZoom = useCallback((e, delta, centerX, centerY) => {
-    if (disablePanZoom) return;
-    setZoom(prevZoom => {
-      const newZoom = Math.max(
-        canvasParams.minZoom,
-        Math.min(canvasParams.maxZoom, prevZoom * (1 + delta * canvasParams.zoomFactor))
-      );
-      const newX = centerX - (centerX - position.x) * (newZoom / prevZoom);
-      const newY = centerY - (centerY - position.y) * (newZoom / prevZoom);
-      setPosition({ x: newX, y: newY });
-      return newZoom;
-    });
-  }, [disablePanZoom, position, canvasParams]);
-
   const handleWheel = useCallback((e) => {
     if (disablePanZoom) return;
     e.preventDefault();
     const delta = e.deltaY < 0 ? 1 : -1;
-    handleZoom(e, delta, e.clientX, e.clientY);
+    handleZoom(delta, e.clientX, e.clientY);
   }, [disablePanZoom, handleZoom]);
 
   useEffect(() => {
@@ -102,7 +76,7 @@ const InfiniteCanvas = ({
           willChange: 'transform',
         }}
       >
-        {typeof children === 'function' ? children({ zoom }) : children}
+        {typeof children === 'function' ? children({ zoom, position }) : children}
       </div>
     </div>
   );

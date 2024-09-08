@@ -1,43 +1,45 @@
 import React, { useEffect } from 'react';
 
-const VERSION = "Arrow v2";
+const VERSION = "Arrow v4.1";
 
-const Arrow = ({ startX, startY, endX, endY, color = '#0077ff' }) => {
+const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
   useEffect(() => {
-    console.log(`${VERSION} - Arrow rendered:`, { startX, startY, endX, endY });
-  }, [startX, startY, endX, endY]);
+    console.log(`${VERSION} - Arrow rendered:`, { startX, startY, endX, endY, zoom });
+  }, [startX, startY, endX, endY, zoom]);
 
   const dx = endX - startX;
   const dy = endY - startY;
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-  const length = Math.sqrt(dx * dx + dy * dy);
+
+  const arrowHead = (
+    <polygon
+      points="-10,-5 0,0 -10,5"
+      fill={color}
+      transform={`translate(${endX},${endY}) rotate(${angle}) scale(${1/zoom})`}
+    />
+  );
 
   return (
-    <div
+    <svg
       style={{
         position: 'absolute',
-        left: `${startX}px`,
-        top: `${startY}px`,
-        width: `${length}px`,
-        height: '2px',
-        backgroundColor: color,
-        transform: `rotate(${angle}deg)`,
-        transformOrigin: '0 0',
+        left: 0,
+        top: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          right: '-8px',
-          top: '-4px',
-          width: 0,
-          height: 0,
-          borderTop: '5px solid transparent',
-          borderBottom: '5px solid transparent',
-          borderLeft: `8px solid ${color}`,
-        }}
+      <line
+        x1={startX}
+        y1={startY}
+        x2={endX}
+        y2={endY}
+        stroke={color}
+        strokeWidth={2 / zoom}
       />
-    </div>
+      {arrowHead}
+    </svg>
   );
 };
 
