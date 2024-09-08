@@ -32,7 +32,8 @@ const InfiniteCanvas = ({ children, onDoubleClick, disablePanZoom }) => {
   const handleZoom = useCallback((e, delta, centerX, centerY) => {
     if (disablePanZoom) return;
     setZoom(prevZoom => {
-      const newZoom = Math.max(0.1, Math.min(5, prevZoom * (1 + delta * 0.1)));
+      const zoomFactor = 0.05; // Increased from 0.1 for faster zooming
+      const newZoom = Math.max(0.1, Math.min(5, prevZoom * (1 + delta * zoomFactor)));
       const newX = centerX - (centerX - position.x) * (newZoom / prevZoom);
       const newY = centerY - (centerY - position.y) * (newZoom / prevZoom);
       setPosition({ x: newX, y: newY });
@@ -42,11 +43,9 @@ const InfiniteCanvas = ({ children, onDoubleClick, disablePanZoom }) => {
 
   const handleWheel = useCallback((e) => {
     if (disablePanZoom) return;
-    if (e.ctrlKey) {
-      e.preventDefault();
-      const delta = -e.deltaY / 100;
-      handleZoom(e, delta, e.clientX, e.clientY);
-    }
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1 : -1;
+    handleZoom(e, delta, e.clientX, e.clientY);
   }, [disablePanZoom, handleZoom]);
 
   useEffect(() => {
@@ -84,6 +83,7 @@ const InfiniteCanvas = ({ children, onDoubleClick, disablePanZoom }) => {
           position: 'absolute',
           top: 0,
           left: 0,
+          willChange: 'transform', // Optimizes performance for transforms
         }}
       >
         {typeof children === 'function' ? children({ zoom }) : children}
