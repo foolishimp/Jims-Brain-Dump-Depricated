@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
-export const useArrowDrawing = (boardRef, zoom, arrowStart, postits, getPostitConnectionPoint) => {
+export const useArrowDrawing = (boardRef, zoom, position, arrowStart, postits, getPostitConnectionPoint) => {
   const [tempArrow, setTempArrow] = useState(null);
 
   useEffect(() => {
@@ -20,21 +20,19 @@ export const useArrowDrawing = (boardRef, zoom, arrowStart, postits, getPostitCo
     }
   }, [arrowStart, postits, getPostitConnectionPoint]);
 
-  // Handle mouse movement for dynamic arrow rendering
   const handleMouseMove = useCallback((event) => {
     if (tempArrow && boardRef.current) {
       const rect = boardRef.current.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / zoom;  // Adjust X position based on zoom level
-      const y = (event.clientY - rect.top) / zoom;   // Adjust Y position based on zoom level
+      const x = (event.clientX - rect.left - position.x) / zoom;
+      const y = (event.clientY - rect.top - position.y) / zoom;
       setTempArrow(prev => ({
         ...prev,
         endX: x,
         endY: y,
       }));
     }
-  }, [tempArrow, boardRef, zoom]);
+  }, [tempArrow, boardRef, zoom, position]);
 
-  // Attach the event listener
   useEffect(() => {
     const board = boardRef.current;
     if (board) {

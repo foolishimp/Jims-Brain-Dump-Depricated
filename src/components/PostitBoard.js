@@ -62,7 +62,7 @@ const PostitBoard = () => {
         onDoubleClick={handleDoubleClick}
         disablePanZoom={!!arrowStart}
       >
-        {({ zoom, transformMatrix }) => (
+        {({ zoom, position }) => (
           <>
             {postits.map((postit) => (
               <Postit
@@ -84,7 +84,7 @@ const PostitBoard = () => {
               setArrowStart={setArrowStart}
               boardRef={boardRef}
               zoom={zoom}
-              transformMatrix={transformMatrix}
+              position={position}
             />
           </>
         )}
