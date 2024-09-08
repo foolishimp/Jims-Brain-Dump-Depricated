@@ -35,10 +35,9 @@ const Postit = ({
   const handleMouseMove = useCallback((event) => {
     if (isDragging) {
       console.log(`Postit ${postit.id} - Dragging`);
-      updatePostit(postit.id, {
-        x: event.clientX / zoom - dragOffset.x,
-        y: event.clientY / zoom - dragOffset.y,
-      });
+      const newX = event.clientX / zoom - dragOffset.x;
+      const newY = event.clientY / zoom - dragOffset.y;
+      updatePostit(postit.id, { x: newX, y: newY });
     }
   }, [isDragging, dragOffset, postit.id, updatePostit, zoom]);
 
@@ -50,9 +49,12 @@ const Postit = ({
   const handleClick = useCallback((event) => {
     console.log(`Postit ${postit.id} - Click event`);
     event.stopPropagation();
-    onSelect(postit.id);
-    onPostitClick(event, postit.id);
-  }, [postit.id, onSelect, onPostitClick]);
+    if (isDrawingArrow) {
+      onPostitClick(event, postit.id);
+    } else {
+      onSelect(postit.id);
+    }
+  }, [postit.id, onSelect, onPostitClick, isDrawingArrow]);
 
   const handleDoubleClick = useCallback((event) => {
     console.log(`Postit ${postit.id} - DoubleClick event`);
@@ -106,10 +108,12 @@ const Postit = ({
         backgroundColor: '#ffff88',
         boxShadow: isSelected ? '0 0 10px rgba(0,0,0,0.5)' : '2px 2px 5px rgba(0,0,0,0.2)',
         padding: '10px',
-        cursor: isDragging ? 'grabbing' : (isDrawingArrow ? 'default' : 'grab'),
+        cursor: isDragging ? 'grabbing' : (isDrawingArrow ? 'crosshair' : 'grab'),
         fontSize: `${fontSize}px`,
         border: isSelected ? '2px solid #0077ff' : 'none',
-        pointerEvents: isDrawingArrow ? 'none' : 'auto',
+        pointerEvents: 'auto',
+        zIndex: isSelected ? 10 : 1,
+        transition: 'box-shadow 0.3s ease, border 0.3s ease',
       }}
       onMouseDown={handleMouseDown}
       onClick={handleClick}
@@ -127,11 +131,18 @@ const Postit = ({
             resize: 'none',
             backgroundColor: 'transparent',
             fontSize: 'inherit',
+            fontFamily: 'inherit',
+            outline: 'none',
           }}
           autoFocus
         />
       ) : (
         <div
+          style={{
+            width: '100%',
+            height: '100%',
+            overflow: 'auto',
+          }}
           dangerouslySetInnerHTML={{ __html: parseMarkdown(postit.text) }}
         />
       )}
@@ -140,14 +151,14 @@ const Postit = ({
           key={index}
           style={{
             position: 'absolute',
-            left: `${point.x - 10}px`,
-            top: `${point.y - 10}px`,
-            width: '20px',
-            height: '20px',
+            left: `${point.x - 5}px`,
+            top: `${point.y - 5}px`,
+            width: '10px',
+            height: '10px',
             borderRadius: '50%',
             backgroundColor: hoveredConnector === index ? 'rgba(0, 119, 255, 0.8)' : 'rgba(0, 119, 255, 0.5)',
             cursor: 'crosshair',
-            zIndex: 10,
+            zIndex: 20,
             transition: 'background-color 0.3s ease',
           }}
           onMouseEnter={() => setHoveredConnector(index)}
@@ -163,4 +174,33 @@ const Postit = ({
   );
 };
 
-export default Postit;
+export default React.memo(Postit);
+
+// Refactoring Analysis:
+// 1. Component Size: The Postit component is becoming large and handling multiple responsibilities. 
+//    It's managing its own state, handling user interactions, and rendering complex UI.
+// 2. Separation of Concerns: We could separate the component into smaller, more focused components:
+//    - PostitContainer: Handles positioning, dragging, and overall layout
+//    - PostitContent: Manages the content display and editing
+//    - ConnectionPoints: Handles the rendering and interaction of connection points
+// 3. Custom Hooks: We could extract some logic into custom hooks:
+//    - useDraggable: Manages dragging functionality
+//    - useZoomAdjustment: Handles font size calculations based on zoom
+// 4. Styling: Consider moving styles to a separate CSS file or using a CSS-in-JS solution for better organization
+// 5. Event Handling: Consolidate event handlers where possible to reduce the number of re-renders
+// 6. PropTypes: Add PropTypes for better type checking and documentation
+// 7. Performance: Use React.memo to prevent unnecessary re-renders of child components
+
+// Proposed Refactoring Structure:
+// - Postit.js (main component, orchestrates others)
+// - PostitContainer.js
+// - PostitContent.js
+// - ConnectionPoints.js
+// - hooks/
+//   - useDraggable.js
+//   - useZoomAdjustment.js
+// - styles/
+//   - Postit.css (or Postit.module.css for CSS modules)
+
+// This refactoring would improve maintainability, readability, and potentially performance.
+// It would also make it easier to test individual components and reuse them if needed.
