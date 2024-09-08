@@ -151,15 +151,16 @@ const Postit = ({
           key={index}
           style={{
             position: 'absolute',
-            left: `${point.x - 5}px`,
-            top: `${point.y - 5}px`,
-            width: '10px',
-            height: '10px',
+            left: `${point.x - 8}px`,
+            top: `${point.y - 8}px`,
+            width: '16px',
+            height: '16px',
             borderRadius: '50%',
             backgroundColor: hoveredConnector === index ? 'rgba(0, 119, 255, 0.8)' : 'rgba(0, 119, 255, 0.5)',
             cursor: 'crosshair',
             zIndex: 20,
-            transition: 'background-color 0.3s ease',
+            transition: 'background-color 0.3s ease, transform 0.3s ease',
+            transform: hoveredConnector === index ? 'scale(1.2)' : 'scale(1)',
           }}
           onMouseEnter={() => setHoveredConnector(index)}
           onMouseLeave={() => setHoveredConnector(null)}
