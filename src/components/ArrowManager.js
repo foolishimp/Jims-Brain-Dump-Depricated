@@ -6,6 +6,11 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
   const [tempArrow, setTempArrow] = useState(null);
 
   useEffect(() => {
+    console.log("ArrowManager - Arrows state:", arrows);
+    console.log("ArrowManager - Temp arrow state:", tempArrow);
+  }, [arrows, tempArrow]);
+
+  useEffect(() => {
     if (arrowStart) {
       const startPostit = postits.find(p => p.id === arrowStart.id);
       if (startPostit) {
@@ -37,19 +42,18 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
       event.stopPropagation();
       const endPostit = postits.find(p => p.id === postitId);
       if (endPostit && tempArrow) {
-        setArrows(prev => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            startId: arrowStart.id,
-            endId: postitId,
-            startX: tempArrow.startX,
-            startY: tempArrow.startY,
-            endX: endPostit.x + 100,
-            endY: endPostit.y + 75,
-          },
-        ]);
+        const newArrow = {
+          id: Date.now().toString(),
+          startId: arrowStart.id,
+          endId: postitId,
+          startX: tempArrow.startX,
+          startY: tempArrow.startY,
+          endX: endPostit.x + 100,
+          endY: endPostit.y + 75,
+        };
+        setArrows(prev => [...prev, newArrow]);
         setArrowStart(null);
+        console.log("ArrowManager - New arrow created:", newArrow);
       }
     }
   }, [arrowStart, postits, tempArrow, setArrowStart]);
@@ -64,32 +68,44 @@ const ArrowManager = ({ postits, arrowStart, setArrowStart, boardRef, zoom }) =>
     }
   }, [boardRef, handleMouseMove]);
 
-  return {
-    renderArrows: () => (
-      <>
-        {arrows.map(arrow => (
-          <Arrow
-            key={arrow.id}
-            startX={arrow.startX}
-            startY={arrow.startY}
-            endX={arrow.endX}
-            endY={arrow.endY}
-            zoom={zoom}
-          />
-        ))}
-        {tempArrow && (
-          <Arrow
-            startX={tempArrow.startX}
-            startY={tempArrow.startY}
-            endX={tempArrow.endX}
-            endY={tempArrow.endY}
-            zoom={zoom}
-          />
-        )}
-      </>
-    ),
-    handlePostitClick
-  };
+  return (
+    <>
+      {arrows.map(arrow => (
+        <Arrow
+          key={arrow.id}
+          startX={arrow.startX}
+          startY={arrow.startY}
+          endX={arrow.endX}
+          endY={arrow.endY}
+          zoom={zoom}
+        />
+      ))}
+      {tempArrow && (
+        <Arrow
+          startX={tempArrow.startX}
+          startY={tempArrow.startY}
+          endX={tempArrow.endX}
+          endY={tempArrow.endY}
+          zoom={zoom}
+          color="#ff0000"
+        />
+      )}
+      {postits.map(postit => (
+        <div
+          key={postit.id}
+          style={{
+            position: 'absolute',
+            left: postit.x,
+            top: postit.y,
+            width: 200,
+            height: 150,
+            pointerEvents: arrowStart ? 'auto' : 'none',
+          }}
+          onClick={(e) => handlePostitClick(e, postit.id)}
+        />
+      ))}
+    </>
+  );
 };
 
 export default ArrowManager;

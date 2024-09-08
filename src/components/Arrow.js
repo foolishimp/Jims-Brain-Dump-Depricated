@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-const VERSION = "Arrow v4.1";
+const VERSION = "Arrow v4.3";
 
 const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
   useEffect(() => {
@@ -28,6 +28,7 @@ const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
+        zIndex: 1000,
       }}
     >
       <line

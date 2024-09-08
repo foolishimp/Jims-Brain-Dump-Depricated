@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import InfiniteCanvas from './InfiniteCanvas';
 import Postit from './Postit';
 import ArrowManager from './ArrowManager';
@@ -10,14 +10,7 @@ const PostitBoard = () => {
   const [arrowStart, setArrowStart] = useState(null);
   const boardRef = useRef(null);
 
-  const arrowManager = ArrowManager({ postits, arrowStart, setArrowStart, boardRef, zoom: 1 });
-
-  useEffect(() => {
-    console.log(`PostitBoard - Selected Postit: ${selectedPostit}, Arrow Start: ${JSON.stringify(arrowStart)}`);
-  }, [selectedPostit, arrowStart]);
-
   const handleDoubleClick = useCallback((event) => {
-    console.log('PostitBoard - DoubleClick event');
     if (!arrowStart) {
       const { clientX, clientY } = event;
       const newPostit = createNewPostit(clientX, clientY);
@@ -26,7 +19,6 @@ const PostitBoard = () => {
   }, [arrowStart]);
 
   const updatePostit = useCallback((id, updates) => {
-    console.log(`PostitBoard - Updating Postit ${id}`, updates);
     setPostits((prevPostits) =>
       prevPostits.map((postit) =>
         postit.id === id ? { ...postit, ...updates } : postit
@@ -35,7 +27,6 @@ const PostitBoard = () => {
   }, []);
 
   const handleSelectPostit = useCallback((id) => {
-    console.log(`PostitBoard - Selecting Postit ${id}`);
     setSelectedPostit(id);
   }, []);
 
@@ -45,25 +36,25 @@ const PostitBoard = () => {
   }, []);
 
   const handleBoardClick = useCallback((event) => {
-    console.log('PostitBoard - Board Click event');
     if (arrowStart) {
+      console.log("PostitBoard - Cancelling arrow drawing");
       setArrowStart(null);
     } else {
+      console.log("PostitBoard - Deselecting Postit");
       setSelectedPostit(null);
     }
   }, [arrowStart]);
+
+  const handlePostitClick = useCallback((event, postitId) => {
+    console.log(`PostitBoard - Postit ${postitId} clicked`);
+    // Add any additional logic for Postit clicks here
+  }, []);
 
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%' }}>
       <InfiniteCanvas 
         onDoubleClick={handleDoubleClick}
         disablePanZoom={!!arrowStart}
-        params={{
-          minZoom: 0.2,
-          maxZoom: 3,
-          zoomFactor: 0.05,
-          panFactor: 1,
-        }}
       >
         {({ zoom }) => (
           <>
@@ -76,11 +67,17 @@ const PostitBoard = () => {
                 isSelected={selectedPostit === postit.id}
                 onSelect={handleSelectPostit}
                 onStartConnection={handleStartConnection}
-                onPostitClick={arrowManager.handlePostitClick}
+                onPostitClick={handlePostitClick}
                 isDrawingArrow={!!arrowStart}
               />
             ))}
-            {arrowManager.renderArrows()}
+            <ArrowManager
+              postits={postits}
+              arrowStart={arrowStart}
+              setArrowStart={setArrowStart}
+              boardRef={boardRef}
+              zoom={zoom}
+            />
           </>
         )}
       </InfiniteCanvas>

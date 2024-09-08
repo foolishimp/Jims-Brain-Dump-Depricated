@@ -13,6 +13,7 @@ const Postit = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [hoveredConnector, setHoveredConnector] = useState(null);
 
   useEffect(() => {
     console.log(`Postit ${postit.id} - isSelected: ${isSelected}, isDrawingArrow: ${isDrawingArrow}`);
@@ -144,12 +145,16 @@ const Postit = ({
             width: '20px',
             height: '20px',
             borderRadius: '50%',
-            backgroundColor: '#0077ff',
+            backgroundColor: hoveredConnector === index ? 'rgba(0, 119, 255, 0.8)' : 'rgba(0, 119, 255, 0.5)',
             cursor: 'crosshair',
             zIndex: 10,
+            transition: 'background-color 0.3s ease',
           }}
-          onClick={(e) => {
+          onMouseEnter={() => setHoveredConnector(index)}
+          onMouseLeave={() => setHoveredConnector(null)}
+          onMouseDown={(e) => {
             e.stopPropagation();
+            console.log(`Postit ${postit.id} - Connector clicked at ${point.position}`);
             onStartConnection(postit.id, point.position);
           }}
         />
