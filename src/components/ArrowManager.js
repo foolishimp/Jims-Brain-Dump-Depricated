@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import Arrow from './Arrow/Arrow';
 
-const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef, zoom, position }, ref) => {
-  const [arrows, setArrows] = useState([]);
+const ArrowManager = forwardRef(({ postits, arrows, arrowStart, setArrowStart, boardRef, zoom, position, onCreateArrow }, ref) => {
   const [tempArrow, setTempArrow] = useState(null);
 
   const getPostitConnectionPoints = useCallback((postit) => {
@@ -34,8 +33,8 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
       const startPostit = postits.find(p => p.id === arrowStart.id);
       if (startPostit) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - position.x) / zoom;
-        const y = (event.clientY - rect.top - position.y) / zoom;
+        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
+        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         if (startPoint) {
           setTempArrow({
@@ -66,8 +65,8 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
       const endPostit = postits.find(p => p.id === postitId);
       if (startPostit && endPostit && boardRef.current) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - position.x) / zoom;
-        const y = (event.clientY - rect.top - position.y) / zoom;
+        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
+        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         const endPoint = getClosestConnectionPoint(endPostit, x, y);
         if (startPoint && endPoint) {
@@ -78,36 +77,17 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
             startPosition: startPoint.position,
             endPosition: endPoint.position,
           };
-          setArrows(prev => [...prev, newArrow]);
+          onCreateArrow(newArrow);
           setArrowStart(null);
           setTempArrow(null);
         }
       }
     }
-  }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, setArrowStart]);
+  }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, setArrowStart, onCreateArrow]);
 
   useImperativeHandle(ref, () => ({
     handlePostitClick
   }));
-
-  const updateArrowPositions = useCallback(() => {
-    setArrows(prevArrows => prevArrows.map(arrow => {
-      const startPostit = postits.find(p => p.id === arrow.startId);
-      const endPostit = postits.find(p => p.id === arrow.endId);
-      if (startPostit && endPostit) {
-        const startPoint = getClosestConnectionPoint(startPostit, endPostit.x, endPostit.y);
-        const endPoint = getClosestConnectionPoint(endPostit, startPostit.x, startPostit.y);
-        if (startPoint && endPoint) {
-          return { ...arrow, startPosition: startPoint.position, endPosition: endPoint.position };
-        }
-      }
-      return arrow;
-    }));
-  }, [postits, getClosestConnectionPoint]);
-
-  useEffect(() => {
-    updateArrowPositions();
-  }, [postits, updateArrowPositions]);
 
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
