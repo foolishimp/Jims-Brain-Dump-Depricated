@@ -1,115 +1,102 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import InfiniteCanvas from './InfiniteCanvas';
 import Postit from './Postit/Postit';
 import ArrowManager from './ArrowManager';
-import { createNewPostit } from '../utils/postit';
+import EventStackDisplay from './EventStackDisplay';
 import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
-import { createEventLog, logEvent, undo, redo } from '../utils/eventLogUtils';
-import { postitEventHandlers } from '../utils/postitEvents';
-import { arrowEventHandlers } from '../utils/arrowEvents';
+import usePostitBoard from '../hooks/usePostitBoard';
 
 const PostitBoard = () => {
-  const [postits, setPostits] = useState([]);
-  const [selectedPostit, setSelectedPostit] = useState(null);
-  const [selectedArrow, setSelectedArrow] = useState(null);
-  const [arrowStart, setArrowStart] = useState(null);
-  const [arrows, setArrows] = useState([]);
-  const [eventLog, setEventLog] = useState(createEventLog());
+  console.log('Rendering PostitBoard');
+  const [topOffset, setTopOffset] = useState(0);
+
+  const {
+    postits,
+    arrows,
+    selectedPostit,
+    selectedArrow,
+    arrowStart,
+    setSelectedPostit,
+    setSelectedArrow,
+    setArrowStart,
+    createPostit,
+    updatePostit,
+    createArrow,
+    deleteSelectedItem,
+    handleUndo,
+    handleRedo,
+    canUndo,
+    canRedo,
+    eventLog
+  } = usePostitBoard();
+
+  console.log('PostitBoard state:', { 
+    postitsCount: postits.length, 
+    arrowsCount: arrows.length, 
+    selectedPostit, 
+    selectedArrow, 
+    arrowStart,
+    canUndo,
+    canRedo
+  });
+
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
 
-  const handleEvent = useCallback((event) => {
-    setEventLog((prevLog) => {
-      const newLog = logEvent(prevLog, event);
-      // Apply the event immediately
-      let newState = { postits, arrows };
-      switch (event.target) {
-        case 'Postit':
-          newState.postits = postitEventHandlers.redo(event, { postits }).postits;
-          break;
-        case 'Arrow':
-          newState.arrows = arrowEventHandlers.redo(event, { arrows }).arrows;
-          break;
-        default:
-          console.warn(`Unhandled event target: ${event.target}`);
-      }
-      setPostits(newState.postits);
-      setArrows(newState.arrows);
-      return newLog;
-    });
-  }, [postits, arrows]);
+  useEffect(() => {
+    console.log('PostitBoard mounted or updated');
+    const calculateTopOffset = () => {
+      const offset = window.outerHeight - window.innerHeight;
+      setTopOffset(offset);
+    };
+
+    calculateTopOffset();
+    window.addEventListener('resize', calculateTopOffset);
+
+    return () => {
+      console.log('PostitBoard will unmount');
+      window.removeEventListener('resize', calculateTopOffset);
+    };
+  }, []);
 
   const handleDoubleClick = useCallback((event, zoom, position) => {
+    console.log('Double click on board', { zoom, position });
     if (!arrowStart && boardRef.current) {
       const rect = boardRef.current.getBoundingClientRect();
       const x = (event.clientX - rect.left - position.x) / zoom;
       const y = (event.clientY - rect.top - position.y) / zoom;
-      const newPostit = createNewPostit(x, y);
-      handleEvent({
-        target: 'Postit',
-        action: 'CREATE',
-        data: newPostit,
-      });
+      console.log('Creating new postit at', { x, y });
+      createPostit(x, y);
     }
-  }, [arrowStart, handleEvent]);
-
-  const updatePostit = useCallback((id, updates) => {
-    const postit = postits.find((p) => p.id === id);
-    if (updates.x !== undefined && updates.y !== undefined) {
-      handleEvent({
-        target: 'Postit',
-        action: 'MOVE',
-        data: {
-          id,
-          oldX: postit.x,
-          oldY: postit.y,
-          newX: updates.x,
-          newY: updates.y,
-        },
-      });
-    } else if (updates.text !== undefined) {
-      handleEvent({
-        target: 'Postit',
-        action: 'EDIT',
-        data: {
-          id,
-          oldText: postit.text,
-          newText: updates.text,
-        },
-      });
-    } else if (updates.color !== undefined) {
-      handleEvent({
-        target: 'Postit',
-        action: 'CHANGE_COLOR',
-        data: {
-          id,
-          oldColor: postit.color,
-          newColor: updates.color,
-        },
-      });
-    }
-  }, [postits, handleEvent]);
+  }, [arrowStart, createPostit]);
 
   const handleSelectPostit = useCallback((id) => {
+    console.log('Selecting postit', id);
     setSelectedPostit(id);
     setSelectedArrow(null);
-  }, []);
+  }, [setSelectedPostit, setSelectedArrow]);
 
   const handleStartConnection = useCallback((id, position) => {
+    console.log('Starting connection from postit', id, 'at position', position);
     setArrowStart({ id, position });
-  }, []);
+  }, [setArrowStart]);
 
   const handleBoardClick = useCallback((event) => {
+    console.log('Board clicked');
     if (arrowStart) {
+      console.log('Handling canvas click for arrow creation');
       arrowManagerRef.current.handleCanvasClick(event);
     } else {
+      console.log('Deselecting postit and arrow');
       setSelectedPostit(null);
       setSelectedArrow(null);
     }
-  }, [arrowStart]);
+  }, [arrowStart, setSelectedPostit, setSelectedArrow]);
 
   const handlePostitClick = useCallback((event, postitId) => {
+    console.log('Postit clicked', postitId);
     if (arrowStart && arrowStart.id !== postitId) {
+      console.log('Handling postit click for arrow creation');
       arrowManagerRef.current.handlePostitClick(event, postitId);
     } else {
       handleSelectPostit(postitId);
@@ -117,107 +104,108 @@ const PostitBoard = () => {
   }, [arrowStart, handleSelectPostit]);
 
   const handleCreateArrow = useCallback((newArrow) => {
-    handleEvent({
-      target: 'Arrow',
-      action: 'CREATE',
-      data: newArrow,
-    });
-  }, [handleEvent]);
+    console.log('Creating new arrow', newArrow);
+    createArrow(newArrow);
+  }, [createArrow]);
 
   const handleCreatePostitAndArrow = useCallback((x, y, startPostitId) => {
-    const newPostit = createNewPostit(x, y);
+    console.log('Creating new postit and arrow', { x, y, startPostitId });
+    const newPostit = createPostit(x, y);
     const startPostit = postits.find(p => p.id === startPostitId);
-    
-    // Immediately update the state
-    setPostits(prevPostits => [...prevPostits, newPostit]);
     
     if (startPostit && newPostit) {
       const newArrow = {
         id: Date.now().toString(),
         startId: startPostitId,
         endId: newPostit.id,
-        startPosition: 'right', // You might want to calculate this
-        endPosition: 'left',    // You might want to calculate this
+        startPosition: 'right',
+        endPosition: 'left',
       };
       
-      // Immediately update the arrows state
-      setArrows(prevArrows => [...prevArrows, newArrow]);
-
-      // Log the events
-      handleEvent({
-        target: 'Postit',
-        action: 'CREATE',
-        data: newPostit,
-      });
-      handleEvent({
-        target: 'Arrow',
-        action: 'CREATE',
-        data: newArrow,
-      });
+      console.log('Creating arrow between postits', newArrow);
+      createArrow(newArrow);
     }
     return newPostit;
-  }, [postits, handleEvent]);
+  }, [postits, createPostit, createArrow]);
 
   const handleArrowClick = useCallback((event, arrowId) => {
+    console.log('Arrow clicked', arrowId);
     event.stopPropagation();
     setSelectedArrow(arrowId);
     setSelectedPostit(null);
-  }, []);
+  }, [setSelectedArrow, setSelectedPostit]);
 
-  const deleteSelectedItem = useCallback(() => {
-    if (selectedPostit) {
-      const deletedPostit = postits.find((p) => p.id === selectedPostit);
-      const connectedArrows = arrows.filter(
-        (arrow) =>
-          arrow.startId === selectedPostit || arrow.endId === selectedPostit
-      );
-      handleEvent({
-        target: 'Postit',
-        action: 'DELETE',
-        data: {
-          postit: deletedPostit,
-          connectedArrows,
-        },
-      });
-      setSelectedPostit(null);
-    } else if (selectedArrow) {
-      const deletedArrow = arrows.find((a) => a.id === selectedArrow);
-      handleEvent({
-        target: 'Arrow',
-        action: 'DELETE',
-        data: deletedArrow,
-      });
-      setSelectedArrow(null);
-    }
-  }, [selectedPostit, selectedArrow, postits, arrows, handleEvent]);
+  useKeyboardEvent('Delete', () => {
+    console.log('Delete key pressed');
+    deleteSelectedItem();
+  }, [deleteSelectedItem]);
 
-  const handleUndo = useCallback(() => {
-    setEventLog((prevLog) => {
-      const { eventLog: newLog, newState } = undo(prevLog, { postits, arrows });
-      setPostits(newState.postits);
-      setArrows(newState.arrows);
-      return newLog;
-    });
-  }, [postits, arrows]);
+  useKeyboardEvent('z', () => {
+    console.log('Undo keyboard shortcut used');
+    handleUndo();
+  }, [handleUndo], { ctrlKey: true });
 
-  const handleRedo = useCallback(() => {
-    setEventLog((prevLog) => {
-      const { eventLog: newLog, newState } = redo(prevLog, { postits, arrows });
-      setPostits(newState.postits);
-      setArrows(newState.arrows);
-      return newLog;
-    });
-  }, [postits, arrows]);
+  useKeyboardEvent('y', () => {
+    console.log('Redo keyboard shortcut used');
+    handleRedo();
+  }, [handleRedo], { ctrlKey: true });
 
-  useKeyboardEvent('Delete', deleteSelectedItem, [selectedPostit, selectedArrow]);
-  useKeyboardEvent('z', handleUndo, [handleUndo], { ctrlKey: true });
-  useKeyboardEvent('y', handleRedo, [handleRedo], { ctrlKey: true });
-
+  console.log('Rendering PostitBoard JSX');
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div style={{ position: 'fixed', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000 }}>
-        <button onClick={handleUndo} disabled={eventLog.past.length === 0 && eventLog.currentSequence.length === 0}>Undo</button>
-        <button onClick={handleRedo} disabled={eventLog.future.length === 0}>Redo</button>
+      <EventStackDisplay eventLog={eventLog} topOffset={topOffset} eventLimit={20} />
+      <div style={{ 
+        position: 'fixed', 
+        top: `${topOffset + 20}px`, 
+        left: '50%', 
+        transform: 'translateX(-50%)', 
+        zIndex: 1000,
+        backgroundColor: 'white',
+        padding: '10px 15px',
+        borderRadius: '20px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
+        display: 'flex',
+        gap: '10px'
+      }}>
+        {console.log('Rendering undo/redo buttons', { canUndo, canRedo })}
+        <button 
+          onClick={() => {
+            console.log('Undo button clicked');
+            handleUndo();
+          }} 
+          disabled={!canUndo}
+          style={{
+            padding: '8px 15px',
+            backgroundColor: canUndo ? '#3498db' : '#bdc3c7',
+            color: 'white',
+            border: 'none',
+            borderRadius: '15px',
+            cursor: canUndo ? 'pointer' : 'not-allowed',
+            fontWeight: 'bold',
+            transition: 'background-color 0.3s ease'
+          }}
+        >
+          Undo
+        </button>
+        <button 
+          onClick={() => {
+            console.log('Redo button clicked');
+            handleRedo();
+          }} 
+          disabled={!canRedo}
+          style={{
+            padding: '8px 15px',
+            backgroundColor: canRedo ? '#2ecc71' : '#bdc3c7',
+            color: 'white',
+            border: 'none',
+            borderRadius: '15px',
+            cursor: canRedo ? 'pointer' : 'not-allowed',
+            fontWeight: 'bold',
+            transition: 'background-color 0.3s ease'
+          }}
+        >
+          Redo
+        </button>
       </div>
       <InfiniteCanvas 
         onDoubleClick={handleDoubleClick}

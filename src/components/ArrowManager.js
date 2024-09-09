@@ -120,11 +120,6 @@ const ArrowManager = forwardRef(({
     }
   }, [arrowStart, boardRef, zoom, position, onCreatePostitAndArrow, setArrowStart]);
 
-  const handleArrowClick = useCallback((event, arrowId) => {
-    event.stopPropagation();
-    onArrowClick(event, arrowId);
-  }, [onArrowClick]);
-
   useImperativeHandle(ref, () => ({
     handlePostitClick,
     handleCanvasClick
@@ -160,7 +155,7 @@ const ArrowManager = forwardRef(({
                 endY={endPoint.y}
                 zoom={zoom}
                 isSelected={selectedArrow === arrow.id}
-                onClick={handleArrowClick}
+                onClick={onArrowClick}
               />
             );
           }
