@@ -101,7 +101,7 @@ const PostitBoard = () => {
 
   const handleBoardClick = useCallback((event) => {
     if (arrowStart) {
-      setArrowStart(null);
+      arrowManagerRef.current.handleCanvasClick(event);
     } else {
       setSelectedPostit(null);
       setSelectedArrow(null);
@@ -115,6 +115,48 @@ const PostitBoard = () => {
       handleSelectPostit(postitId);
     }
   }, [arrowStart, handleSelectPostit]);
+
+  const handleCreateArrow = useCallback((newArrow) => {
+    handleEvent({
+      target: 'Arrow',
+      action: 'CREATE',
+      data: newArrow,
+    });
+  }, [handleEvent]);
+
+  const handleCreatePostitAndArrow = useCallback((x, y, startPostitId) => {
+    const newPostit = createNewPostit(x, y);
+    const startPostit = postits.find(p => p.id === startPostitId);
+    
+    // Immediately update the state
+    setPostits(prevPostits => [...prevPostits, newPostit]);
+    
+    if (startPostit && newPostit) {
+      const newArrow = {
+        id: Date.now().toString(),
+        startId: startPostitId,
+        endId: newPostit.id,
+        startPosition: 'right', // You might want to calculate this
+        endPosition: 'left',    // You might want to calculate this
+      };
+      
+      // Immediately update the arrows state
+      setArrows(prevArrows => [...prevArrows, newArrow]);
+
+      // Log the events
+      handleEvent({
+        target: 'Postit',
+        action: 'CREATE',
+        data: newPostit,
+      });
+      handleEvent({
+        target: 'Arrow',
+        action: 'CREATE',
+        data: newArrow,
+      });
+    }
+    return newPostit;
+  }, [postits, handleEvent]);
 
   const handleArrowClick = useCallback((event, arrowId) => {
     event.stopPropagation();
@@ -168,6 +210,8 @@ const PostitBoard = () => {
   }, [postits, arrows]);
 
   useKeyboardEvent('Delete', deleteSelectedItem, [selectedPostit, selectedArrow]);
+  useKeyboardEvent('z', handleUndo, [handleUndo], { ctrlKey: true });
+  useKeyboardEvent('y', handleRedo, [handleRedo], { ctrlKey: true });
 
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -205,13 +249,8 @@ const PostitBoard = () => {
               position={position}
               selectedArrow={selectedArrow}
               onArrowClick={handleArrowClick}
-              onCreateArrow={(arrow) => {
-                handleEvent({
-                  target: 'Arrow',
-                  action: 'CREATE',
-                  data: arrow,
-                });
-              }}
+              onCreateArrow={handleCreateArrow}
+              onCreatePostitAndArrow={handleCreatePostitAndArrow}
             />
           </>
         )}

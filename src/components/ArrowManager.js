@@ -11,7 +11,8 @@ const ArrowManager = forwardRef(({
   position, 
   selectedArrow,
   onArrowClick,
-  onCreateArrow 
+  onCreateArrow,
+  onCreatePostitAndArrow
 }, ref) => {
   const [tempArrow, setTempArrow] = useState(null);
 
@@ -59,15 +60,24 @@ const ArrowManager = forwardRef(({
     }
   }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint]);
 
+  const handleKeyDown = useCallback((event) => {
+    if (event.key === 'Escape' && arrowStart) {
+      setArrowStart(null);
+      setTempArrow(null);
+    }
+  }, [arrowStart, setArrowStart]);
+
   useEffect(() => {
     const board = boardRef.current;
     if (board) {
       board.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('keydown', handleKeyDown);
       return () => {
         board.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [boardRef, handleMouseMove]);
+  }, [boardRef, handleMouseMove, handleKeyDown]);
 
   const handlePostitClick = useCallback((event, postitId) => {
     if (arrowStart && arrowStart.id !== postitId) {
@@ -96,17 +106,43 @@ const ArrowManager = forwardRef(({
     }
   }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, setArrowStart, onCreateArrow]);
 
+  const handleCanvasClick = useCallback((event) => {
+    if (arrowStart && boardRef.current) {
+      event.stopPropagation();
+      const rect = boardRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
+      const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
+      
+      onCreatePostitAndArrow(x, y, arrowStart.id);
+      
+      setArrowStart(null);
+      setTempArrow(null);
+    }
+  }, [arrowStart, boardRef, zoom, position, onCreatePostitAndArrow, setArrowStart]);
+
   const handleArrowClick = useCallback((event, arrowId) => {
     event.stopPropagation();
     onArrowClick(event, arrowId);
   }, [onArrowClick]);
 
   useImperativeHandle(ref, () => ({
-    handlePostitClick
+    handlePostitClick,
+    handleCanvasClick
   }));
 
   return (
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+    <div 
+      style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        width: '100%', 
+        height: '100%', 
+        pointerEvents: arrowStart ? 'auto' : 'none',
+        cursor: arrowStart ? 'crosshair' : 'default'
+      }}
+      onClick={handleCanvasClick}
+    >
       {arrows.map(arrow => {
         const startPostit = postits.find(p => p.id === arrow.startId);
         const endPostit = postits.find(p => p.id === arrow.endId);
