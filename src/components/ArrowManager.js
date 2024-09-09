@@ -98,13 +98,14 @@ const ArrowManager = forwardRef(({
             startPosition: startPoint.position,
             endPosition: endPoint.position,
           };
+          console.log('Creating new arrow:', newArrow);
           onCreateArrow(newArrow);
           setArrowStart(null);
           setTempArrow(null);
         }
       }
     }
-  }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, setArrowStart, onCreateArrow]);
+  }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, onCreateArrow, setArrowStart]);
 
   const handleCanvasClick = useCallback((event) => {
     if (arrowStart && boardRef.current) {
@@ -125,6 +126,8 @@ const ArrowManager = forwardRef(({
     handleCanvasClick
   }));
 
+  console.log('Rendering ArrowManager, arrows:', arrows);
+
   return (
     <div 
       style={{ 
@@ -139,6 +142,7 @@ const ArrowManager = forwardRef(({
       onClick={handleCanvasClick}
     >
       {arrows.map(arrow => {
+        console.log('Rendering arrow:', arrow);
         const startPostit = postits.find(p => p.id === arrow.startId);
         const endPostit = postits.find(p => p.id === arrow.endId);
         if (startPostit && endPostit) {
@@ -164,6 +168,7 @@ const ArrowManager = forwardRef(({
       })}
       {tempArrow && (
         <Arrow
+          key="temp-arrow"
           startX={tempArrow.startX}
           startY={tempArrow.startY}
           endX={tempArrow.endX}

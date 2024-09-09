@@ -103,6 +103,8 @@ const usePostitBoard = () => {
       action: 'CREATE',
       data: newArrow,
     });
+    // Immediately update the arrows state to ensure rendering
+    setArrows(prevArrows => [...prevArrows, newArrow]);
   }, [handleEvent]);
 
   const deleteSelectedItem = useCallback(() => {
@@ -149,7 +151,7 @@ const usePostitBoard = () => {
     handleRedo,
     canUndo: eventLog.past.length > 0 || eventLog.currentSequence.length > 0,
     canRedo: eventLog.future.length > 0,
-    eventLog, // Add this line to expose the eventLog
+    eventLog,
   };
 };
 

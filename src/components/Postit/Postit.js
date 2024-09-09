@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, memo } from 'react';
 import PropTypes from 'prop-types';
 import PostitContainer from './PostitContainer';
 import PostitContent from './PostitContent';
@@ -6,7 +6,7 @@ import ConnectionPoints from './ConnectionPoints';
 import ColorMenu from './ColorMenu';
 import { POSTIT_COLORS } from '../../utils/colorUtils';
 
-const Postit = ({
+const Postit = memo(({
   postit,
   updatePostit,
   zoom,
@@ -58,6 +58,7 @@ const Postit = ({
       isSelected={isSelected}
       isDrawingArrow={isDrawingArrow}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
       <PostitContent
@@ -81,7 +82,7 @@ const Postit = ({
       )}
     </PostitContainer>
   );
-};
+});
 
 Postit.propTypes = {
   postit: PropTypes.shape({
@@ -101,4 +102,4 @@ Postit.propTypes = {
   isDrawingArrow: PropTypes.bool.isRequired,
 };
 
-export default React.memo(Postit);
+export default Postit;
