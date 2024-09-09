@@ -1,10 +1,8 @@
-import React, { useCallback, useState, memo } from 'react';
+import React, { useCallback, memo } from 'react';
 import PropTypes from 'prop-types';
 import PostitContainer from './PostitContainer';
 import PostitContent from './PostitContent';
 import ConnectionPoints from './ConnectionPoints';
-import ColorMenu from './ColorMenu';
-import { POSTIT_COLORS } from '../../utils/colorUtils';
 
 const Postit = memo(({
   postit,
@@ -16,8 +14,6 @@ const Postit = memo(({
   onPostitClick,
   isDrawingArrow
 }) => {
-  const [showColorMenu, setShowColorMenu] = useState(false);
-
   const handleClick = useCallback((event) => {
     event.stopPropagation();
     if (isDrawingArrow) {
@@ -29,9 +25,10 @@ const Postit = memo(({
 
   const handleDoubleClick = useCallback((event) => {
     event.stopPropagation();
+    console.log(`Double-click detected on Postit ${postit.id}`);
     updatePostit(postit.id, { isEditing: true });
   }, [postit.id, updatePostit]);
-
+  
   const handleStartConnection = useCallback((position) => {
     onStartConnection(postit.id, position);
   }, [postit.id, onStartConnection]);
@@ -40,14 +37,8 @@ const Postit = memo(({
     updatePostit(postit.id, updates);
   }, [postit.id, updatePostit]);
 
-  const handleContextMenu = useCallback((event) => {
-    event.preventDefault();
-    setShowColorMenu(true);
-  }, []);
-
-  const handleColorChange = useCallback((color) => {
-    updatePostit(postit.id, { color });
-    setShowColorMenu(false);
+  const handleStopEditing = useCallback(() => {
+    updatePostit(postit.id, { isEditing: false });
   }, [postit.id, updatePostit]);
 
   return (
@@ -59,25 +50,17 @@ const Postit = memo(({
       isDrawingArrow={isDrawingArrow}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      onContextMenu={handleContextMenu}
     >
       <PostitContent
         postit={postit}
         updatePostit={handleUpdatePostit}
-        onDoubleClick={handleDoubleClick}
+        onStopEditing={handleStopEditing}
       />
       {isSelected && !isDrawingArrow && (
         <ConnectionPoints
           onStartConnection={handleStartConnection}
           width={200}
           height={150}
-        />
-      )}
-      {showColorMenu && (
-        <ColorMenu
-          colors={POSTIT_COLORS}
-          onColorSelect={handleColorChange}
-          onClose={() => setShowColorMenu(false)}
         />
       )}
     </PostitContainer>

@@ -46,16 +46,11 @@ const PostitBoard = () => {
   }, []);
   
   const handleDoubleClick = useCallback((event, zoom, position) => {
-    console.log('Double click on board', { zoom, position });
     if (!arrowStart && boardRef.current) {
       const rect = boardRef.current.getBoundingClientRect();
       const x = (event.clientX - rect.left - position.x) / zoom;
       const y = (event.clientY - rect.top - position.y) / zoom;
-      console.log('Creating new postit at', { x, y });
-      const newPostit = createPostit(x, y);
-      if (!newPostit) {
-        console.error('Failed to create new postit');
-      }
+      createPostit(x, y);
     }
   }, [arrowStart, createPostit]);
 
@@ -85,16 +80,13 @@ const PostitBoard = () => {
     }
   }, [arrowStart, handleSelectPostit]);
 
-  const handleCreateArrow = useCallback((newArrow) => {
-    console.log('Creating new arrow in PostitBoard:', newArrow);
-    createArrow(newArrow);
-  }, [createArrow]);
+  const handleUpdatePostit = useCallback((id, updates) => {
+    updatePostit(id, updates);
+  }, [updatePostit]);
 
   const handleCreatePostitAndArrow = useCallback((x, y, startPostitId) => {
     const newPostit = createPostit(x, y);
-    const startPostit = postits.find(p => p.id === startPostitId);
-    
-    if (startPostit && newPostit) {
+    if (newPostit && startPostitId) {
       const newArrow = {
         id: Date.now().toString(),
         startId: startPostitId,
@@ -102,17 +94,10 @@ const PostitBoard = () => {
         startPosition: 'right',
         endPosition: 'left',
       };
-      
       createArrow(newArrow);
     }
     return newPostit;
-  }, [postits, createPostit, createArrow]);
-
-  const handleArrowClick = useCallback((event, arrowId) => {
-    event.stopPropagation();
-    setSelectedArrow(arrowId);
-    setSelectedPostit(null);
-  }, [setSelectedArrow, setSelectedPostit]);
+  }, [createPostit, createArrow]);
 
   useKeyboardEvent('Delete', deleteSelectedItem, [deleteSelectedItem]);
   useKeyboardEvent('z', handleUndo, [handleUndo], { ctrlKey: true, triggerOnInput: false });
@@ -147,7 +132,7 @@ const PostitBoard = () => {
               <Postit
                 key={postit.id}
                 postit={postit}
-                updatePostit={updatePostit}
+                updatePostit={handleUpdatePostit}
                 zoom={zoom}
                 isSelected={selectedPostit === postit.id}
                 onSelect={handleSelectPostit}
@@ -166,8 +151,8 @@ const PostitBoard = () => {
               zoom={zoom}
               position={position}
               selectedArrow={selectedArrow}
-              onArrowClick={handleArrowClick}
-              onCreateArrow={handleCreateArrow}
+              onArrowClick={setSelectedArrow}
+              onCreateArrow={createArrow}
               onCreatePostitAndArrow={handleCreatePostitAndArrow}
             />
           </>

@@ -45,8 +45,8 @@ const ArrowManager = forwardRef(({
       const startPostit = postits.find(p => p.id === arrowStart.id);
       if (startPostit) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
-        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
+        const x = (event.clientX - rect.left - position.x) / zoom;
+        const y = (event.clientY - rect.top - position.y) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         if (startPoint) {
           setTempArrow({
@@ -79,6 +79,10 @@ const ArrowManager = forwardRef(({
     }
   }, [boardRef, handleMouseMove, handleKeyDown]);
 
+  const isPointInsidePostit = useCallback((x, y, postit) => {
+    return x >= postit.x && x <= postit.x + 200 && y >= postit.y && y <= postit.y + 150;
+  }, []);
+
   const handlePostitClick = useCallback((event, postitId) => {
     if (arrowStart && arrowStart.id !== postitId) {
       event.stopPropagation();
@@ -86,8 +90,8 @@ const ArrowManager = forwardRef(({
       const endPostit = postits.find(p => p.id === postitId);
       if (startPostit && endPostit && boardRef.current) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
-        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
+        const x = (event.clientX - rect.left - position.x) / zoom;
+        const y = (event.clientY - rect.top - position.y) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         const endPoint = getClosestConnectionPoint(endPostit, x, y);
         if (startPoint && endPoint) {
@@ -111,22 +115,29 @@ const ArrowManager = forwardRef(({
     if (arrowStart && boardRef.current) {
       event.stopPropagation();
       const rect = boardRef.current.getBoundingClientRect();
-      const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
-      const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
+      const x = (event.clientX - rect.left - position.x) / zoom;
+      const y = (event.clientY - rect.top - position.y) / zoom;
       
-      onCreatePostitAndArrow(x, y, arrowStart.id);
+      // Check if the click is inside an existing postit
+      const clickedPostit = postits.find(postit => isPointInsidePostit(x, y, postit));
+      
+      if (clickedPostit) {
+        // If clicked on an existing postit, create an arrow to it
+        handlePostitClick(event, clickedPostit.id);
+      } else {
+        // If not clicked on an existing postit, create a new one and an arrow to it
+        onCreatePostitAndArrow(x, y, arrowStart.id);
+      }
       
       setArrowStart(null);
       setTempArrow(null);
     }
-  }, [arrowStart, boardRef, zoom, position, onCreatePostitAndArrow, setArrowStart]);
+  }, [arrowStart, boardRef, zoom, position, postits, isPointInsidePostit, handlePostitClick, onCreatePostitAndArrow, setArrowStart]);
 
   useImperativeHandle(ref, () => ({
     handlePostitClick,
     handleCanvasClick
   }));
-
-  console.log('Rendering ArrowManager, arrows:', arrows);
 
   return (
     <div 
@@ -142,7 +153,6 @@ const ArrowManager = forwardRef(({
       onClick={handleCanvasClick}
     >
       {arrows.map(arrow => {
-        console.log('Rendering arrow:', arrow);
         const startPostit = postits.find(p => p.id === arrow.startId);
         const endPostit = postits.find(p => p.id === arrow.endId);
         if (startPostit && endPostit) {
