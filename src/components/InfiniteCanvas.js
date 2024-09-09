@@ -38,6 +38,12 @@ const InfiniteCanvas = ({
     handleZoom(delta, e.clientX, e.clientY);
   }, [disablePanZoom, handleZoom]);
 
+  const handleDoubleClick = useCallback((e) => {
+    if (onDoubleClick) {
+      onDoubleClick(e, zoom, position);
+    }
+  }, [onDoubleClick, zoom, position]);
+
   useEffect(() => {
     const currentContainer = containerRef.current;
     if (currentContainer) {
@@ -64,7 +70,7 @@ const InfiniteCanvas = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onDoubleClick={onDoubleClick}
+      onDoubleClick={handleDoubleClick}
     >
       <div
         style={{

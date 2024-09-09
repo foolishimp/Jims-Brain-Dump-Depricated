@@ -13,10 +13,12 @@ const PostitBoard = () => {
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
 
-  const handleDoubleClick = useCallback((event) => {
-    if (!arrowStart) {
-      const { clientX, clientY } = event;
-      const newPostit = createNewPostit(clientX, clientY);
+  const handleDoubleClick = useCallback((event, zoom, position) => {
+    if (!arrowStart && boardRef.current) {
+      const rect = boardRef.current.getBoundingClientRect();
+      const x = (event.clientX - rect.left - position.x) / zoom;
+      const y = (event.clientY - rect.top - position.y) / zoom;
+      const newPostit = createNewPostit(x, y);
       setPostits((prevPostits) => [...prevPostits, newPostit]);
     }
   }, [arrowStart]);
@@ -66,7 +68,7 @@ const PostitBoard = () => {
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <InfiniteCanvas 
-        onDoubleClick={handleDoubleClick}
+        onDoubleClick={(event, zoom, position) => handleDoubleClick(event, zoom, position)}
         disablePanZoom={!!arrowStart}
       >
         {({ zoom, position }) => (
