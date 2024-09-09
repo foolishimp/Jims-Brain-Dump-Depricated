@@ -34,8 +34,8 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
       const startPostit = postits.find(p => p.id === arrowStart.id);
       if (startPostit) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
-        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
+        const x = (event.clientX - rect.left - position.x) / zoom;
+        const y = (event.clientY - rect.top - position.y) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         if (startPoint) {
           setTempArrow({
@@ -66,8 +66,8 @@ const ArrowManager = forwardRef(({ postits, arrowStart, setArrowStart, boardRef,
       const endPostit = postits.find(p => p.id === postitId);
       if (startPostit && endPostit && boardRef.current) {
         const rect = boardRef.current.getBoundingClientRect();
-        const x = (event.clientX - rect.left - (position?.x || 0)) / zoom;
-        const y = (event.clientY - rect.top - (position?.y || 0)) / zoom;
+        const x = (event.clientX - rect.left - position.x) / zoom;
+        const y = (event.clientY - rect.top - position.y) / zoom;
         const startPoint = getClosestConnectionPoint(startPostit, x, y);
         const endPoint = getClosestConnectionPoint(endPostit, x, y);
         if (startPoint && endPoint) {

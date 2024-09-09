@@ -3,19 +3,20 @@ import InfiniteCanvas from './InfiniteCanvas';
 import Postit from './Postit/Postit';
 import ArrowManager from './ArrowManager';
 import { createNewPostit } from '../utils/postit';
-import { POSTIT_COLORS } from '../utils/colorUtils';
+import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
 
 const PostitBoard = () => {
   const [postits, setPostits] = useState([]);
   const [selectedPostit, setSelectedPostit] = useState(null);
   const [arrowStart, setArrowStart] = useState(null);
+  const [arrows, setArrows] = useState([]);
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
 
   const handleDoubleClick = useCallback((event) => {
     if (!arrowStart) {
       const { clientX, clientY } = event;
-      const newPostit = createNewPostit(clientX, clientY, POSTIT_COLORS.yellow);
+      const newPostit = createNewPostit(clientX, clientY);
       setPostits((prevPostits) => [...prevPostits, newPostit]);
     }
   }, [arrowStart]);
@@ -52,6 +53,16 @@ const PostitBoard = () => {
     }
   }, [arrowStart, handleSelectPostit]);
 
+  const deleteSelectedPostit = useCallback(() => {
+    if (selectedPostit) {
+      setPostits((prevPostits) => prevPostits.filter((postit) => postit.id !== selectedPostit));
+      setArrows((prevArrows) => prevArrows.filter((arrow) => arrow.startId !== selectedPostit && arrow.endId !== selectedPostit));
+      setSelectedPostit(null);
+    }
+  }, [selectedPostit]);
+
+  useKeyboardEvent('Delete', deleteSelectedPostit, [selectedPostit]);
+
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <InfiniteCanvas 
@@ -76,6 +87,8 @@ const PostitBoard = () => {
             <ArrowManager
               ref={arrowManagerRef}
               postits={postits}
+              arrows={arrows}
+              setArrows={setArrows}
               arrowStart={arrowStart}
               setArrowStart={setArrowStart}
               boardRef={boardRef}
