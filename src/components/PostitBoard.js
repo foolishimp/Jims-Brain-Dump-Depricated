@@ -3,6 +3,7 @@ import InfiniteCanvas from './InfiniteCanvas';
 import Postit from './Postit/Postit';
 import ArrowManager from './ArrowManager';
 import { createNewPostit } from '../utils/postit';
+import { POSTIT_COLORS } from '../utils/colorUtils';
 
 const PostitBoard = () => {
   const [postits, setPostits] = useState([]);
@@ -14,8 +15,8 @@ const PostitBoard = () => {
   const handleDoubleClick = useCallback((event) => {
     if (!arrowStart) {
       const { clientX, clientY } = event;
-      const newPostit = createNewPostit(clientX, clientY);
-      setPostits((prevPostits) => [...prevPostits, { ...newPostit, isEditing: true }]);
+      const newPostit = createNewPostit(clientX, clientY, POSTIT_COLORS.yellow);
+      setPostits((prevPostits) => [...prevPostits, newPostit]);
     }
   }, [arrowStart]);
 

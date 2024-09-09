@@ -1,8 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import PostitContainer from './PostitContainer';
 import PostitContent from './PostitContent';
 import ConnectionPoints from './ConnectionPoints';
+import ColorMenu from './ColorMenu';
+import { POSTIT_COLORS } from '../../utils/colorUtils';
 
 const Postit = ({
   postit,
@@ -14,6 +16,8 @@ const Postit = ({
   onPostitClick,
   isDrawingArrow
 }) => {
+  const [showColorMenu, setShowColorMenu] = useState(false);
+
   const handleClick = useCallback((event) => {
     event.stopPropagation();
     if (isDrawingArrow) {
@@ -36,6 +40,16 @@ const Postit = ({
     updatePostit(postit.id, updates);
   }, [postit.id, updatePostit]);
 
+  const handleContextMenu = useCallback((event) => {
+    event.preventDefault();
+    setShowColorMenu(true);
+  }, []);
+
+  const handleColorChange = useCallback((color) => {
+    updatePostit(postit.id, { color });
+    setShowColorMenu(false);
+  }, [postit.id, updatePostit]);
+
   return (
     <PostitContainer
       postit={postit}
@@ -44,6 +58,7 @@ const Postit = ({
       isSelected={isSelected}
       isDrawingArrow={isDrawingArrow}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
     >
       <PostitContent
         postit={postit}
@@ -57,6 +72,13 @@ const Postit = ({
           height={150}
         />
       )}
+      {showColorMenu && (
+        <ColorMenu
+          colors={POSTIT_COLORS}
+          onColorSelect={handleColorChange}
+          onClose={() => setShowColorMenu(false)}
+        />
+      )}
     </PostitContainer>
   );
 };
@@ -68,6 +90,7 @@ Postit.propTypes = {
     y: PropTypes.number.isRequired,
     text: PropTypes.string.isRequired,
     isEditing: PropTypes.bool.isRequired,
+    color: PropTypes.string,
   }).isRequired,
   updatePostit: PropTypes.func.isRequired,
   zoom: PropTypes.number.isRequired,
