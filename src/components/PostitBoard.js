@@ -143,13 +143,13 @@ const PostitBoard = () => {
   useKeyboardEvent('z', () => {
     console.log('Undo keyboard shortcut used');
     handleUndo();
-  }, [handleUndo], { ctrlKey: true });
+  }, [handleUndo], { ctrlKey: true, triggerOnInput: false });
 
   useKeyboardEvent('y', () => {
     console.log('Redo keyboard shortcut used');
     handleRedo();
-  }, [handleRedo], { ctrlKey: true });
-
+  }, [handleRedo], { ctrlKey: true, triggerOnInput: false });
+  
   console.log('Rendering PostitBoard JSX');
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
