@@ -148,8 +148,8 @@ const usePostitBoard = () => {
       return newLog;
     });
   }, [postits, arrows]);
-
-  return {
+  
+ return {
     postits,
     arrows,
     selectedPostit,
@@ -167,6 +167,8 @@ const usePostitBoard = () => {
     canUndo: eventLog.past.length > 0 || eventLog.currentSequence.length > 0,
     canRedo: eventLog.future.length > 0,
     eventLog,
+    setPostits,
+    setArrows
   };
 };
 

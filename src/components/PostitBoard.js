@@ -5,6 +5,8 @@ import ArrowManager from './ArrowManager';
 import EventStackDisplay from './EventStackDisplay';
 import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
 import usePostitBoard from '../hooks/usePostitBoard';
+import { exportDiagram } from '../utils/exportUtils';
+import { importDiagram } from '../utils/importUtils';
 
 const PostitBoard = () => {
   const {
@@ -24,13 +26,16 @@ const PostitBoard = () => {
     handleRedo,
     canUndo,
     canRedo,
-    eventLog
+    eventLog,
+    setPostits,
+    setArrows
   } = usePostitBoard();
 
   const [topOffset, setTopOffset] = useState(0);
   const [showEventStack, setShowEventStack] = useState(false);
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const calculateTopOffset = () => {
@@ -104,6 +109,29 @@ const PostitBoard = () => {
     setShowEventStack(prev => !prev);
   }, []);
 
+  const handleExport = useCallback(() => {
+    exportDiagram(postits, arrows);
+  }, [postits, arrows]);
+
+  const handleImport = useCallback(() => {
+    fileInputRef.current.click();
+  }, []);
+
+  const handleFileChange = useCallback((event) => {
+    const file = event.target.files[0];
+    if (file) {
+      importDiagram(file)
+        .then((diagramData) => {
+          setPostits(diagramData.postits);
+          setArrows(diagramData.arrows);
+          alert('Diagram imported successfully!');
+        })
+        .catch((error) => {
+          alert(`Error importing diagram: ${error.message}`);
+        });
+    }
+  }, [setPostits, setArrows]);
+
   useKeyboardEvent('Delete', deleteSelectedItem, [deleteSelectedItem]);
   useKeyboardEvent('z', handleUndo, [handleUndo], { ctrlKey: true, triggerOnInput: false });
   useKeyboardEvent('y', handleRedo, [handleRedo], { ctrlKey: true, triggerOnInput: false });
@@ -127,6 +155,16 @@ const PostitBoard = () => {
       }}>
         <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
         <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
+        <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
+        <button onClick={handleExport}>Export</button>
+        <button onClick={handleImport}>Import</button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+          accept=".json"
+        />
         <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
         <button 
           onClick={toggleEventStack}
