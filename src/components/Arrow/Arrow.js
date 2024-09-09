@@ -1,17 +1,14 @@
 import React, { useEffect } from 'react';
 
-const VERSION = "Arrow v4.5";
-
-const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
+const Arrow = ({ id, startX, startY, endX, endY, color = '#0077ff', zoom = 1, isSelected, onClick }) => {
   useEffect(() => {
-    console.log(`${VERSION} - Arrow rendered:`, { startX, startY, endX, endY, zoom });
+    console.log(`Arrow rendered:`, { startX, startY, endX, endY, zoom });
   }, [startX, startY, endX, endY, zoom]);
 
   const dx = endX - startX;
   const dy = endY - startY;
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-  // Calculate the bounding box for the arrow
   const minX = Math.min(startX, endX);
   const minY = Math.min(startY, endY);
   const maxX = Math.max(startX, endX);
@@ -27,6 +24,12 @@ const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
     />
   );
 
+  const handleClick = (event) => {
+    if (onClick) {
+      onClick(event, id);
+    }
+  };
+
   return (
     <svg
       style={{
@@ -36,9 +39,11 @@ const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
         width: `${width}px`,
         height: `${height}px`,
         overflow: 'visible',
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
+        cursor: 'pointer',
         zIndex: 1000,
       }}
+      onClick={handleClick}
     >
       <line
         x1={startX - minX}
@@ -46,7 +51,7 @@ const Arrow = ({ startX, startY, endX, endY, color = '#0077ff', zoom = 1 }) => {
         x2={endX - minX}
         y2={endY - minY}
         stroke={color}
-        strokeWidth={2 / zoom}
+        strokeWidth={isSelected ? 4 / zoom : 2 / zoom}
       />
       {arrowHead}
     </svg>

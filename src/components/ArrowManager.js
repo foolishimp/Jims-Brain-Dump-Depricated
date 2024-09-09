@@ -1,7 +1,18 @@
 import React, { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import Arrow from './Arrow/Arrow';
 
-const ArrowManager = forwardRef(({ postits, arrows, arrowStart, setArrowStart, boardRef, zoom, position, onCreateArrow }, ref) => {
+const ArrowManager = forwardRef(({ 
+  postits, 
+  arrows, 
+  arrowStart, 
+  setArrowStart, 
+  boardRef, 
+  zoom, 
+  position, 
+  selectedArrow,
+  onArrowClick,
+  onCreateArrow 
+}, ref) => {
   const [tempArrow, setTempArrow] = useState(null);
 
   const getPostitConnectionPoints = useCallback((postit) => {
@@ -85,6 +96,11 @@ const ArrowManager = forwardRef(({ postits, arrows, arrowStart, setArrowStart, b
     }
   }, [arrowStart, postits, boardRef, zoom, position, getClosestConnectionPoint, setArrowStart, onCreateArrow]);
 
+  const handleArrowClick = useCallback((event, arrowId) => {
+    event.stopPropagation();
+    onArrowClick(event, arrowId);
+  }, [onArrowClick]);
+
   useImperativeHandle(ref, () => ({
     handlePostitClick
   }));
@@ -101,11 +117,14 @@ const ArrowManager = forwardRef(({ postits, arrows, arrowStart, setArrowStart, b
             return (
               <Arrow
                 key={arrow.id}
+                id={arrow.id}
                 startX={startPoint.x}
                 startY={startPoint.y}
                 endX={endPoint.x}
                 endY={endPoint.y}
                 zoom={zoom}
+                isSelected={selectedArrow === arrow.id}
+                onClick={handleArrowClick}
               />
             );
           }

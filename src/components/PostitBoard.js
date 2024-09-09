@@ -11,6 +11,7 @@ import { arrowEventHandlers } from '../utils/arrowEvents';
 const PostitBoard = () => {
   const [postits, setPostits] = useState([]);
   const [selectedPostit, setSelectedPostit] = useState(null);
+  const [selectedArrow, setSelectedArrow] = useState(null);
   const [arrowStart, setArrowStart] = useState(null);
   const [arrows, setArrows] = useState([]);
   const [eventLog, setEventLog] = useState(createEventLog());
@@ -91,6 +92,7 @@ const PostitBoard = () => {
 
   const handleSelectPostit = useCallback((id) => {
     setSelectedPostit(id);
+    setSelectedArrow(null);
   }, []);
 
   const handleStartConnection = useCallback((id, position) => {
@@ -102,6 +104,7 @@ const PostitBoard = () => {
       setArrowStart(null);
     } else {
       setSelectedPostit(null);
+      setSelectedArrow(null);
     }
   }, [arrowStart]);
 
@@ -113,7 +116,13 @@ const PostitBoard = () => {
     }
   }, [arrowStart, handleSelectPostit]);
 
-  const deleteSelectedPostit = useCallback(() => {
+  const handleArrowClick = useCallback((event, arrowId) => {
+    event.stopPropagation();
+    setSelectedArrow(arrowId);
+    setSelectedPostit(null);
+  }, []);
+
+  const deleteSelectedItem = useCallback(() => {
     if (selectedPostit) {
       const deletedPostit = postits.find((p) => p.id === selectedPostit);
       const connectedArrows = arrows.filter(
@@ -129,8 +138,16 @@ const PostitBoard = () => {
         },
       });
       setSelectedPostit(null);
+    } else if (selectedArrow) {
+      const deletedArrow = arrows.find((a) => a.id === selectedArrow);
+      handleEvent({
+        target: 'Arrow',
+        action: 'DELETE',
+        data: deletedArrow,
+      });
+      setSelectedArrow(null);
     }
-  }, [selectedPostit, postits, arrows, handleEvent]);
+  }, [selectedPostit, selectedArrow, postits, arrows, handleEvent]);
 
   const handleUndo = useCallback(() => {
     setEventLog((prevLog) => {
@@ -150,7 +167,7 @@ const PostitBoard = () => {
     });
   }, [postits, arrows]);
 
-  useKeyboardEvent('Delete', deleteSelectedPostit, [selectedPostit]);
+  useKeyboardEvent('Delete', deleteSelectedItem, [selectedPostit, selectedArrow]);
 
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -186,6 +203,8 @@ const PostitBoard = () => {
               boardRef={boardRef}
               zoom={zoom}
               position={position}
+              selectedArrow={selectedArrow}
+              onArrowClick={handleArrowClick}
               onCreateArrow={(arrow) => {
                 handleEvent({
                   target: 'Arrow',

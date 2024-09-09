@@ -5,7 +5,7 @@ const MAX_LOG_SIZE = 100;
 
 // Define granularity for different event types
 const EVENT_GRANULARITY = {
-  'Postit.MOVE': 5,
+  'Postit.MOVE': 20,
   'Postit.EDIT': 3,
   'Arrow.MOVE': 5,
   // Add other event types and their granularity as needed
