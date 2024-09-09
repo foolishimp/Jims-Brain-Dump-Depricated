@@ -118,21 +118,23 @@ const ArrowManager = forwardRef(({
       const x = (event.clientX - rect.left - position.x) / zoom;
       const y = (event.clientY - rect.top - position.y) / zoom;
       
-      // Check if the click is inside an existing postit
       const clickedPostit = postits.find(postit => isPointInsidePostit(x, y, postit));
       
       if (clickedPostit) {
-        // If clicked on an existing postit, create an arrow to it
         handlePostitClick(event, clickedPostit.id);
       } else {
-        // If not clicked on an existing postit, create a new one and an arrow to it
+        console.log('Creating new postit and arrow at:', x, y);
         onCreatePostitAndArrow(x, y, arrowStart.id);
+        setArrowStart(null);
+        setTempArrow(null);
       }
-      
-      setArrowStart(null);
-      setTempArrow(null);
     }
   }, [arrowStart, boardRef, zoom, position, postits, isPointInsidePostit, handlePostitClick, onCreatePostitAndArrow, setArrowStart]);
+
+  const handleArrowClick = useCallback((arrowId) => {
+    console.log('Arrow clicked:', arrowId);
+    onArrowClick(arrowId);
+  }, [onArrowClick]);
 
   useImperativeHandle(ref, () => ({
     handlePostitClick,
@@ -147,7 +149,7 @@ const ArrowManager = forwardRef(({
         left: 0, 
         width: '100%', 
         height: '100%', 
-        pointerEvents: arrowStart ? 'auto' : 'none',
+        pointerEvents: 'auto',
         cursor: arrowStart ? 'crosshair' : 'default'
       }}
       onClick={handleCanvasClick}
@@ -169,7 +171,7 @@ const ArrowManager = forwardRef(({
                 endY={endPoint.y}
                 zoom={zoom}
                 isSelected={selectedArrow === arrow.id}
-                onClick={onArrowClick}
+                onClick={handleArrowClick}
               />
             );
           }

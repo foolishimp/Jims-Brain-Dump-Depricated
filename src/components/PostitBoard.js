@@ -28,6 +28,7 @@ const PostitBoard = () => {
   } = usePostitBoard();
 
   const [topOffset, setTopOffset] = useState(0);
+  const [showEventStack, setShowEventStack] = useState(false);
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
 
@@ -99,13 +100,17 @@ const PostitBoard = () => {
     return newPostit;
   }, [createPostit, createArrow]);
 
+  const toggleEventStack = useCallback(() => {
+    setShowEventStack(prev => !prev);
+  }, []);
+
   useKeyboardEvent('Delete', deleteSelectedItem, [deleteSelectedItem]);
   useKeyboardEvent('z', handleUndo, [handleUndo], { ctrlKey: true, triggerOnInput: false });
   useKeyboardEvent('y', handleRedo, [handleRedo], { ctrlKey: true, triggerOnInput: false });
 
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <EventStackDisplay eventLog={eventLog} topOffset={topOffset} eventLimit={20} />
+      {showEventStack && <EventStackDisplay eventLog={eventLog} topOffset={topOffset} eventLimit={20} />}
       <div style={{ 
         position: 'fixed', 
         top: `${topOffset + 20}px`, 
@@ -117,10 +122,26 @@ const PostitBoard = () => {
         borderRadius: '20px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
         display: 'flex',
-        gap: '10px'
+        gap: '10px',
+        alignItems: 'center'
       }}>
         <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
         <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
+        <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
+        <button 
+          onClick={toggleEventStack}
+          style={{
+            backgroundColor: showEventStack ? '#4CAF50' : '#f0f0f0',
+            color: showEventStack ? 'white' : 'black',
+            border: 'none',
+            padding: '5px 10px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s, color 0.3s'
+          }}
+        >
+          Events
+        </button>
       </div>
       <InfiniteCanvas 
         onDoubleClick={handleDoubleClick}

@@ -1,8 +1,10 @@
-import React, { useCallback, memo } from 'react';
+import React, { useCallback, memo, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import PostitContainer from './PostitContainer';
 import PostitContent from './PostitContent';
 import ConnectionPoints from './ConnectionPoints';
+import ColorMenu from './ColorMenu';
+import { POSTIT_COLORS } from '../../utils/colorUtils';
 
 const Postit = memo(({
   postit,
@@ -14,14 +16,19 @@ const Postit = memo(({
   onPostitClick,
   isDrawingArrow
 }) => {
+  const [showColorMenu, setShowColorMenu] = useState(false);
+  const colorMenuRef = useRef(null);
+
   const handleClick = useCallback((event) => {
     event.stopPropagation();
-    if (isDrawingArrow) {
-      onPostitClick(event, postit.id);
-    } else {
-      onSelect(postit.id);
+    if (!showColorMenu) {
+      if (isDrawingArrow) {
+        onPostitClick(event, postit.id);
+      } else {
+        onSelect(postit.id);
+      }
     }
-  }, [postit.id, onSelect, onPostitClick, isDrawingArrow]);
+  }, [postit.id, onSelect, onPostitClick, isDrawingArrow, showColorMenu]);
 
   const handleDoubleClick = useCallback((event) => {
     event.stopPropagation();
@@ -30,8 +37,10 @@ const Postit = memo(({
   }, [postit.id, updatePostit]);
   
   const handleStartConnection = useCallback((position) => {
-    onStartConnection(postit.id, position);
-  }, [postit.id, onStartConnection]);
+    if (!showColorMenu) {
+      onStartConnection(postit.id, position);
+    }
+  }, [postit.id, onStartConnection, showColorMenu]);
 
   const handleUpdatePostit = useCallback((updates) => {
     updatePostit(postit.id, updates);
@@ -40,6 +49,21 @@ const Postit = memo(({
   const handleStopEditing = useCallback(() => {
     updatePostit(postit.id, { isEditing: false });
   }, [postit.id, updatePostit]);
+
+  const handleContextMenu = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setShowColorMenu(true);
+  }, []);
+
+  const handleColorSelect = useCallback((color) => {
+    updatePostit(postit.id, { color });
+    setShowColorMenu(false);
+  }, [postit.id, updatePostit]);
+
+  const handleCloseColorMenu = useCallback(() => {
+    setShowColorMenu(false);
+  }, []);
 
   return (
     <PostitContainer
@@ -50,18 +74,37 @@ const Postit = memo(({
       isDrawingArrow={isDrawingArrow}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onContextMenu={handleContextMenu}
     >
       <PostitContent
         postit={postit}
         updatePostit={handleUpdatePostit}
         onStopEditing={handleStopEditing}
       />
-      {isSelected && !isDrawingArrow && (
+      {isSelected && !isDrawingArrow && !showColorMenu && (
         <ConnectionPoints
           onStartConnection={handleStartConnection}
           width={200}
           height={150}
         />
+      )}
+      {showColorMenu && (
+        <div 
+          ref={colorMenuRef} 
+          style={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: '100%', 
+            zIndex: 1000 // Ensure color menu is on top
+          }}
+          onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
+        >
+          <ColorMenu
+            colors={POSTIT_COLORS}
+            onColorSelect={handleColorSelect}
+            onClose={handleCloseColorMenu}
+          />
+        </div>
       )}
     </PostitContainer>
   );

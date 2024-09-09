@@ -11,7 +11,8 @@ const PostitContainer = ({
   onClick,
   onDoubleClick,
   onContextMenu,
-  children
+  children,
+  showColorMenu
 }) => {
   const containerRef = useRef(null);
 
@@ -41,7 +42,7 @@ const PostitContainer = ({
         fontSize: `${zoom >= 1 ? 16 : zoom >= 0.5 ? 14 : zoom >= 0.25 ? 12 : zoom >= 0.1 ? 10 : 8}px`,
         border: isSelected ? '2px solid #0077ff' : 'none',
         pointerEvents: 'auto',
-        zIndex: isSelected ? 10 : 1,
+        zIndex: isSelected || showColorMenu ? 1000 : 1, // Increase z-index when selected or color menu is open
         transition: 'box-shadow 0.3s ease, border 0.3s ease',
       }}
       onMouseDown={!isDrawingArrow && !postit.isEditing ? handleMouseDown : undefined}
@@ -69,6 +70,7 @@ PostitContainer.propTypes = {
   onDoubleClick: PropTypes.func.isRequired,
   onContextMenu: PropTypes.func.isRequired,
   children: PropTypes.node.isRequired,
+  showColorMenu: PropTypes.bool.isRequired,
 };
 
 export default React.memo(PostitContainer);
