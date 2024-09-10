@@ -113,7 +113,6 @@ const ArrowManager = forwardRef(({
 
   const handleCanvasClick = useCallback((event) => {
     if (arrowStart && boardRef.current) {
-      event.stopPropagation();
       const rect = boardRef.current.getBoundingClientRect();
       const x = (event.clientX - rect.left - position.x) / zoom;
       const y = (event.clientY - rect.top - position.y) / zoom;
@@ -140,7 +139,6 @@ const ArrowManager = forwardRef(({
     handlePostitClick,
     handleCanvasClick
   }));
-
   return (
     <div 
       style={{ 
@@ -149,8 +147,7 @@ const ArrowManager = forwardRef(({
         left: 0, 
         width: '100%', 
         height: '100%', 
-        pointerEvents: 'auto',
-        cursor: arrowStart ? 'crosshair' : 'default'
+        pointerEvents: 'none',
       }}
       onClick={handleCanvasClick}
     >
@@ -172,6 +169,7 @@ const ArrowManager = forwardRef(({
                 zoom={zoom}
                 isSelected={selectedArrow === arrow.id}
                 onClick={handleArrowClick}
+                isTemporary={false}
               />
             );
           }
@@ -187,6 +185,7 @@ const ArrowManager = forwardRef(({
           endY={tempArrow.endY}
           zoom={zoom}
           color="#ff0000"
+          isTemporary={true}
         />
       )}
     </div>

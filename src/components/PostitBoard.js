@@ -5,8 +5,9 @@ import ArrowManager from './ArrowManager';
 import EventStackDisplay from './EventStackDisplay';
 import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
 import usePostitBoard from '../hooks/usePostitBoard';
-import { exportDiagram } from '../utils/exportUtils';
+import { exportDiagram, autoSaveDiagram } from '../utils/exportUtils';
 import { importDiagram } from '../utils/importUtils';
+import { checkForNewEvents } from '../utils/eventUtils';
 
 const PostitBoard = () => {
   const {
@@ -33,9 +34,12 @@ const PostitBoard = () => {
 
   const [topOffset, setTopOffset] = useState(0);
   const [showEventStack, setShowEventStack] = useState(false);
+  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
+  const [filename, setFilename] = useState('diagram');
+  const [autoSaveIndex, setAutoSaveIndex] = useState(0);
+  const [lastAutoSaveEventLogLength, setLastAutoSaveEventLogLength] = useState(0);
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const calculateTopOffset = () => {
@@ -50,7 +54,74 @@ const PostitBoard = () => {
       window.removeEventListener('resize', calculateTopOffset);
     };
   }, []);
-  
+
+  const handleSave = useCallback(async () => {
+    try {
+      const newFilename = await exportDiagram(postits, arrows, filename);
+      setFilename(newFilename);
+    } catch (err) {
+      console.error('Failed to save the diagram:', err);
+    }
+  }, [postits, arrows, filename]);
+
+  const handleAutoSave = useCallback(async () => {
+    const hasNewEvents = checkForNewEvents(eventLog, lastAutoSaveEventLogLength);
+    if (hasNewEvents) {
+      try {
+        const newIndex = await autoSaveDiagram(postits, arrows, filename, autoSaveIndex);
+        setAutoSaveIndex(newIndex);
+        setLastAutoSaveEventLogLength(eventLog.past.length + eventLog.currentSequence.length);
+        console.log('Auto-save triggered');
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        // Optionally, you can notify the user here
+      }
+    } else {
+      console.log('No new events, skipping auto-save');
+    }
+  }, [postits, arrows, filename, autoSaveIndex, eventLog, lastAutoSaveEventLogLength]);
+
+  useEffect(() => {
+    let autoSaveInterval;
+    if (isAutoSaveEnabled) {
+      autoSaveInterval = setInterval(handleAutoSave, 10000); // Check every 10 seconds
+    }
+
+    return () => {
+      if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+      }
+    };
+  }, [isAutoSaveEnabled, handleAutoSave]);
+
+  const handleLoad = useCallback(async () => {
+    try {
+      const { filename: newFilename, data } = await importDiagram();
+      setPostits(data.postits);
+      setArrows(data.arrows);
+      setFilename(newFilename);
+    } catch (err) {
+      console.error('Failed to load the diagram:', err);
+    }
+  }, [setPostits, setArrows]);
+
+  const toggleAutoSave = useCallback(() => {
+    setIsAutoSaveEnabled(prev => !prev);
+  }, []);
+
+  const toggleEventStack = useCallback(() => {
+    setShowEventStack(prev => !prev);
+  }, []);
+
+  const handleBoardClick = useCallback((event) => {
+    if (arrowStart) {
+      arrowManagerRef.current.handleCanvasClick(event);
+    } else {
+      setSelectedPostit(null);
+      setSelectedArrow(null);
+    }
+  }, [arrowStart, setSelectedPostit, setSelectedArrow]);
+
   const handleDoubleClick = useCallback((event, zoom, position) => {
     if (!arrowStart && boardRef.current) {
       const rect = boardRef.current.getBoundingClientRect();
@@ -68,15 +139,6 @@ const PostitBoard = () => {
   const handleStartConnection = useCallback((id, position) => {
     setArrowStart({ id, position });
   }, [setArrowStart]);
-
-  const handleBoardClick = useCallback((event) => {
-    if (arrowStart) {
-      arrowManagerRef.current.handleCanvasClick(event);
-    } else {
-      setSelectedPostit(null);
-      setSelectedArrow(null);
-    }
-  }, [arrowStart, setSelectedPostit, setSelectedArrow]);
 
   const handlePostitClick = useCallback((event, postitId) => {
     if (arrowStart && arrowStart.id !== postitId) {
@@ -105,33 +167,6 @@ const PostitBoard = () => {
     return newPostit;
   }, [createPostit, createArrow]);
 
-  const toggleEventStack = useCallback(() => {
-    setShowEventStack(prev => !prev);
-  }, []);
-
-  const handleExport = useCallback(() => {
-    exportDiagram(postits, arrows);
-  }, [postits, arrows]);
-
-  const handleImport = useCallback(() => {
-    fileInputRef.current.click();
-  }, []);
-
-  const handleFileChange = useCallback((event) => {
-    const file = event.target.files[0];
-    if (file) {
-      importDiagram(file)
-        .then((diagramData) => {
-          setPostits(diagramData.postits);
-          setArrows(diagramData.arrows);
-          alert('Diagram imported successfully!');
-        })
-        .catch((error) => {
-          alert(`Error importing diagram: ${error.message}`);
-        });
-    }
-  }, [setPostits, setArrows]);
-
   useKeyboardEvent('Delete', deleteSelectedItem, [deleteSelectedItem]);
   useKeyboardEvent('z', handleUndo, [handleUndo], { ctrlKey: true, triggerOnInput: false });
   useKeyboardEvent('y', handleRedo, [handleRedo], { ctrlKey: true, triggerOnInput: false });
@@ -156,15 +191,16 @@ const PostitBoard = () => {
         <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
         <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
         <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
-        <button onClick={handleExport}>Export</button>
-        <button onClick={handleImport}>Import</button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-          accept=".json"
-        />
+        <button onClick={handleSave}>Save</button>
+        <label>
+          <input
+            type="checkbox"
+            checked={isAutoSaveEnabled}
+            onChange={toggleAutoSave}
+          />
+          Auto-save
+        </label>
+        <button onClick={handleLoad}>Load</button>
         <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
         <button 
           onClick={toggleEventStack}
@@ -187,19 +223,6 @@ const PostitBoard = () => {
       >
         {({ zoom, position }) => (
           <>
-            {postits.map((postit) => (
-              <Postit
-                key={postit.id}
-                postit={postit}
-                updatePostit={handleUpdatePostit}
-                zoom={zoom}
-                isSelected={selectedPostit === postit.id}
-                onSelect={handleSelectPostit}
-                onStartConnection={handleStartConnection}
-                onPostitClick={handlePostitClick}
-                isDrawingArrow={!!arrowStart}
-              />
-            ))}
             <ArrowManager
               ref={arrowManagerRef}
               postits={postits}
@@ -214,6 +237,19 @@ const PostitBoard = () => {
               onCreateArrow={createArrow}
               onCreatePostitAndArrow={handleCreatePostitAndArrow}
             />
+            {postits.map((postit) => (
+              <Postit
+                key={postit.id}
+                postit={postit}
+                updatePostit={handleUpdatePostit}
+                zoom={zoom}
+                isSelected={selectedPostit === postit.id}
+                onSelect={handleSelectPostit}
+                onStartConnection={handleStartConnection}
+                onPostitClick={handlePostitClick}
+                isDrawingArrow={!!arrowStart}
+              />
+            ))}
           </>
         )}
       </InfiniteCanvas>
