@@ -5,9 +5,9 @@ import ArrowManager from './ArrowManager';
 import EventStackDisplay from './EventStackDisplay';
 import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
 import usePostitBoard from '../hooks/usePostitBoard';
-import { exportDiagram, autoSaveDiagram } from '../utils/exportUtils';
+import useAutoSave from '../hooks/useAutoSave';
+import { exportDiagram } from '../utils/exportUtils';
 import { importDiagram } from '../utils/importUtils';
-import { checkForNewEvents } from '../utils/eventUtils';
 
 const PostitBoard = () => {
   const {
@@ -36,10 +36,10 @@ const PostitBoard = () => {
   const [showEventStack, setShowEventStack] = useState(false);
   const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
   const [filename, setFilename] = useState('diagram');
-  const [autoSaveIndex, setAutoSaveIndex] = useState(0);
-  const [lastAutoSaveEventLogLength, setLastAutoSaveEventLogLength] = useState(0);
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
+
+  useAutoSave(postits, arrows, filename, eventLog, isAutoSaveEnabled);
 
   useEffect(() => {
     const calculateTopOffset = () => {
@@ -63,36 +63,6 @@ const PostitBoard = () => {
       console.error('Failed to save the diagram:', err);
     }
   }, [postits, arrows, filename]);
-
-  const handleAutoSave = useCallback(async () => {
-    const hasNewEvents = checkForNewEvents(eventLog, lastAutoSaveEventLogLength);
-    if (hasNewEvents) {
-      try {
-        const newIndex = await autoSaveDiagram(postits, arrows, filename, autoSaveIndex);
-        setAutoSaveIndex(newIndex);
-        setLastAutoSaveEventLogLength(eventLog.past.length + eventLog.currentSequence.length);
-        console.log('Auto-save triggered');
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-        // Optionally, you can notify the user here
-      }
-    } else {
-      console.log('No new events, skipping auto-save');
-    }
-  }, [postits, arrows, filename, autoSaveIndex, eventLog, lastAutoSaveEventLogLength]);
-
-  useEffect(() => {
-    let autoSaveInterval;
-    if (isAutoSaveEnabled) {
-      autoSaveInterval = setInterval(handleAutoSave, 10000); // Check every 10 seconds
-    }
-
-    return () => {
-      if (autoSaveInterval) {
-        clearInterval(autoSaveInterval);
-      }
-    };
-  }, [isAutoSaveEnabled, handleAutoSave]);
 
   const handleLoad = useCallback(async () => {
     try {
