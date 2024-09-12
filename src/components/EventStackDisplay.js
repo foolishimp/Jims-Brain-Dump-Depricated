@@ -15,7 +15,7 @@ const EventStackDisplay = ({ eventLog, topOffset, eventLimit = 20 }) => {
       top: `${topOffset + 20}px`,
       left: '20px',
       width: '250px',
-      maxHeight: 'calc(100vh - 40px)',
+      maxHeight: `calc(100vh - ${topOffset + 40}px)`,
       overflowY: 'auto',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       padding: '15px',

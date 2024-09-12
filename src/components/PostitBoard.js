@@ -5,7 +5,6 @@ import ArrowManager from './ArrowManager';
 import EventStackDisplay from './EventStackDisplay';
 import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
 import usePostitBoard from '../hooks/usePostitBoard';
-import useAutoSave from '../hooks/useAutoSave';
 import { exportDiagram } from '../utils/exportUtils';
 import { importDiagram } from '../utils/importUtils';
 
@@ -32,26 +31,25 @@ const PostitBoard = () => {
     setArrows
   } = usePostitBoard();
 
-  const [topOffset, setTopOffset] = useState(0);
   const [showEventStack, setShowEventStack] = useState(false);
-  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
   const [filename, setFilename] = useState('diagram');
   const boardRef = useRef(null);
   const arrowManagerRef = useRef(null);
-
-  useAutoSave(postits, arrows, filename, eventLog, isAutoSaveEnabled);
+  const [toolbarHeight, setToolbarHeight] = useState(0);
+  const toolbarRef = useRef(null);
 
   useEffect(() => {
-    const calculateTopOffset = () => {
-      const offset = window.outerHeight - window.innerHeight;
-      setTopOffset(offset);
+    const updateToolbarHeight = () => {
+      if (toolbarRef.current) {
+        setToolbarHeight(toolbarRef.current.offsetHeight);
+      }
     };
 
-    calculateTopOffset();
-    window.addEventListener('resize', calculateTopOffset);
+    updateToolbarHeight();
+    window.addEventListener('resize', updateToolbarHeight);
 
     return () => {
-      window.removeEventListener('resize', calculateTopOffset);
+      window.removeEventListener('resize', updateToolbarHeight);
     };
   }, []);
 
@@ -74,10 +72,6 @@ const PostitBoard = () => {
       console.error('Failed to load the diagram:', err);
     }
   }, [setPostits, setArrows]);
-
-  const toggleAutoSave = useCallback(() => {
-    setIsAutoSaveEnabled(prev => !prev);
-  }, []);
 
   const toggleEventStack = useCallback(() => {
     setShowEventStack(prev => !prev);
@@ -143,33 +137,34 @@ const PostitBoard = () => {
 
   return (
     <div ref={boardRef} onClick={handleBoardClick} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {showEventStack && <EventStackDisplay eventLog={eventLog} topOffset={topOffset} eventLimit={20} />}
-      <div style={{ 
-        position: 'fixed', 
-        top: `${topOffset + 20}px`, 
-        left: '50%', 
-        transform: 'translateX(-50%)', 
-        zIndex: 1000,
-        backgroundColor: 'white',
-        padding: '10px 15px',
-        borderRadius: '20px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'center'
-      }}>
+      {showEventStack && (
+        <EventStackDisplay 
+          eventLog={eventLog} 
+          topOffset={toolbarHeight} 
+          eventLimit={20} 
+        />
+      )}
+      <div 
+        ref={toolbarRef}
+        style={{ 
+          position: 'fixed', 
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          backgroundColor: 'white',
+          padding: '10px 15px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
         <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
         <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
         <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
         <button onClick={handleSave}>Save</button>
-        <label>
-          <input
-            type="checkbox"
-            checked={isAutoSaveEnabled}
-            onChange={toggleAutoSave}
-          />
-          Auto-save
-        </label>
         <button onClick={handleLoad}>Load</button>
         <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
         <button 
@@ -190,6 +185,7 @@ const PostitBoard = () => {
       <InfiniteCanvas 
         onDoubleClick={handleDoubleClick}
         disablePanZoom={!!arrowStart}
+        topOffset={toolbarHeight}
       >
         {({ zoom, position }) => (
           <>

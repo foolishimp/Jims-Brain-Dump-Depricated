@@ -5,7 +5,8 @@ const InfiniteCanvas = ({
   children,
   onDoubleClick,
   disablePanZoom,
-  zoomParams = {}
+  zoomParams = {},
+  topOffset = 0
 }) => {
   const { zoom, position, handleZoom, handlePan } = useZoom(1, { x: 0, y: 0 }, zoomParams);
   const [isDragging, setIsDragging] = useState(false);
@@ -61,7 +62,8 @@ const InfiniteCanvas = ({
       ref={containerRef}
       style={{
         width: '100vw',
-        height: '100vh',
+        height: `calc(100vh - ${topOffset}px)`,
+        marginTop: `${topOffset}px`,
         overflow: 'hidden',
         cursor: disablePanZoom ? 'default' : (isDragging ? 'grabbing' : 'grab'),
         touchAction: 'none',
