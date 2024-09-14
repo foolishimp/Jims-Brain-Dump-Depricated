@@ -10,24 +10,24 @@ const InfiniteCanvas = ({
 }) => {
   const { zoom, position, handleZoom, handlePan } = useZoom(1, { x: 0, y: 0 }, zoomParams);
   const [isDragging, setIsDragging] = useState(false);
-  const [startDrag, setStartDrag] = useState({ x: 0, y: 0 });
+  const [lastMousePosition, setLastMousePosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
 
   const handleMouseDown = useCallback((e) => {
     if (disablePanZoom) return;
     if (e.button === 0) {
       setIsDragging(true);
-      setStartDrag({ x: e.clientX, y: e.clientY });
+      setLastMousePosition({ x: e.clientX, y: e.clientY });
     }
   }, [disablePanZoom]);
 
   const handleMouseMove = useCallback((e) => {
     if (disablePanZoom || !isDragging) return;
-    const deltaX = e.clientX - startDrag.x;
-    const deltaY = e.clientY - startDrag.y;
+    const deltaX = e.clientX - lastMousePosition.x;
+    const deltaY = e.clientY - lastMousePosition.y;
     handlePan(deltaX, deltaY);
-    setStartDrag({ x: e.clientX, y: e.clientY });
-  }, [disablePanZoom, isDragging, startDrag, handlePan]);
+    setLastMousePosition({ x: e.clientX, y: e.clientY });
+  }, [disablePanZoom, isDragging, lastMousePosition, handlePan]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);

@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 
 const DEFAULT_ZOOM_PARAMS = {
   minZoom: 0.1,
-  maxZoom: 3,
+  maxZoom: 1,
   zoomFactor: 1.1
 };
 
@@ -14,19 +14,18 @@ const useZoom = (initialZoom = 1, initialPosition = { x: 0, y: 0 }, customZoomPa
   const handleZoom = useCallback((delta, clientX, clientY) => {
     setZoom((prevZoom) => {
       const factor = delta > 0 ? zoomParams.zoomFactor : 1 / zoomParams.zoomFactor;
-      const newZoom = prevZoom * factor;
-      const clampedZoom = Math.max(zoomParams.minZoom, Math.min(zoomParams.maxZoom, newZoom));
+      const newZoom = Math.max(zoomParams.minZoom, Math.min(zoomParams.maxZoom, prevZoom * factor));
       
       setPosition((prevPosition) => {
         const mouseX = (clientX - prevPosition.x) / prevZoom;
         const mouseY = (clientY - prevPosition.y) / prevZoom;
-        const newX = clientX - mouseX * clampedZoom;
-        const newY = clientY - mouseY * clampedZoom;
-        
-        return { x: newX, y: newY };
+        return {
+          x: clientX - mouseX * newZoom,
+          y: clientY - mouseY * newZoom
+        };
       });
 
-      return clampedZoom;
+      return newZoom;
     });
   }, [zoomParams]);
 
