@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const EventStackDisplay = ({ eventLog, topOffset, eventLimit = 20 }) => {
   const { past, future } = eventLog;
@@ -12,16 +13,16 @@ const EventStackDisplay = ({ eventLog, topOffset, eventLimit = 20 }) => {
   return (
     <div style={{
       position: 'fixed',
-      top: `${topOffset + 20}px`,
+      top: `${topOffset}px`,
       left: '20px',
       width: '250px',
-      maxHeight: `calc(100vh - ${topOffset + 40}px)`,
+      maxHeight: `calc(100vh - ${topOffset + 20}px)`,
       overflowY: 'auto',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       padding: '15px',
-      borderRadius: '20px',
+      borderRadius: '0 0 20px 20px',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-      zIndex: 1000,
+      zIndex: 999,
       fontSize: '14px'
     }}>
       <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2c3e50' }}>Event Stack</h3>
@@ -39,6 +40,15 @@ const EventStackDisplay = ({ eventLog, topOffset, eventLimit = 20 }) => {
       </div>
     </div>
   );
+};
+
+EventStackDisplay.propTypes = {
+  eventLog: PropTypes.shape({
+    past: PropTypes.array.isRequired,
+    future: PropTypes.array.isRequired,
+  }).isRequired,
+  topOffset: PropTypes.number.isRequired,
+  eventLimit: PropTypes.number,
 };
 
 export default EventStackDisplay;

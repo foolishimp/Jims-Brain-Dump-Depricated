@@ -5,7 +5,7 @@ const InfiniteCanvas = ({
   children,
   onDoubleClick,
   disablePanZoom,
-  zoomParams = {},
+  zoomParams,
   topOffset = 0
 }) => {
   const { zoom, position, handleZoom, handlePan } = useZoom(1, { x: 0, y: 0 }, zoomParams);
@@ -17,16 +17,17 @@ const InfiniteCanvas = ({
     if (disablePanZoom) return;
     if (e.button === 0) {
       setIsDragging(true);
-      setStartDrag({ x: e.clientX - position.x, y: e.clientY - position.y });
+      setStartDrag({ x: e.clientX, y: e.clientY });
     }
-  }, [disablePanZoom, position]);
+  }, [disablePanZoom]);
 
   const handleMouseMove = useCallback((e) => {
     if (disablePanZoom || !isDragging) return;
-    const deltaX = e.clientX - startDrag.x - position.x;
-    const deltaY = e.clientY - startDrag.y - position.y;
+    const deltaX = e.clientX - startDrag.x;
+    const deltaY = e.clientY - startDrag.y;
     handlePan(deltaX, deltaY);
-  }, [disablePanZoom, isDragging, startDrag, position, handlePan]);
+    setStartDrag({ x: e.clientX, y: e.clientY });
+  }, [disablePanZoom, isDragging, startDrag, handlePan]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -35,13 +36,19 @@ const InfiniteCanvas = ({
   const handleWheel = useCallback((e) => {
     if (disablePanZoom) return;
     e.preventDefault();
+    const rect = containerRef.current.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
     const delta = e.deltaY < 0 ? 1 : -1;
-    handleZoom(delta, e.clientX, e.clientY);
+    handleZoom(delta, offsetX, offsetY);
   }, [disablePanZoom, handleZoom]);
 
   const handleDoubleClick = useCallback((e) => {
     if (onDoubleClick) {
-      onDoubleClick(e, zoom, position);
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left - position.x) / zoom;
+      const y = (e.clientY - rect.top - position.y) / zoom;
+      onDoubleClick(e, zoom, { x, y });
     }
   }, [onDoubleClick, zoom, position]);
 

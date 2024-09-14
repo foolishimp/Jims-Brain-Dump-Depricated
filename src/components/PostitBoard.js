@@ -3,10 +3,18 @@ import InfiniteCanvas from './InfiniteCanvas';
 import Postit from './Postit/Postit';
 import ArrowManager from './ArrowManager';
 import EventStackDisplay from './EventStackDisplay';
+import TopMenu from './TopMenu';
 import { useKeyboardEvent } from '../hooks/useKeyboardEvent';
 import usePostitBoard from '../hooks/usePostitBoard';
 import { exportDiagram } from '../utils/exportUtils';
 import { importDiagram } from '../utils/importUtils';
+import { saveToIndexedDB, loadFromBrowser } from '../utils/storageUtils';
+
+const ZOOM_PARAMS = {
+  minZoom: 0.1,
+  maxZoom: 3,
+  zoomFactor: 1.1
+};
 
 const PostitBoard = () => {
   const {
@@ -52,6 +60,25 @@ const PostitBoard = () => {
       window.removeEventListener('resize', updateToolbarHeight);
     };
   }, []);
+
+  useEffect(() => {
+    const loadSavedData = async () => {
+      const savedData = await loadFromBrowser();
+      if (savedData) {
+        setPostits(savedData.postits || []);
+        setArrows(savedData.arrows || []);
+      }
+    };
+    loadSavedData();
+  }, [setPostits, setArrows]);
+
+  useEffect(() => {
+    const saveData = async () => {
+      await saveToIndexedDB({ postits, arrows });
+      localStorage.setItem('lastSave', JSON.stringify({ postits, arrows }));
+    };
+    saveData();
+  }, [postits, arrows]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -144,48 +171,23 @@ const PostitBoard = () => {
           eventLimit={20} 
         />
       )}
-      <div 
-        ref={toolbarRef}
-        style={{ 
-          position: 'fixed', 
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          backgroundColor: 'white',
-          padding: '10px 15px',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
-        <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
-        <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
-        <button onClick={handleSave}>Save</button>
-        <button onClick={handleLoad}>Load</button>
-        <div style={{ width: '1px', height: '20px', backgroundColor: '#ccc', margin: '0 10px' }} />
-        <button 
-          onClick={toggleEventStack}
-          style={{
-            backgroundColor: showEventStack ? '#4CAF50' : '#f0f0f0',
-            color: showEventStack ? 'white' : 'black',
-            border: 'none',
-            padding: '5px 10px',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s, color 0.3s'
-          }}
-        >
-          Events
-        </button>
+      <div ref={toolbarRef}>
+        <TopMenu
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onSave={handleSave}
+          onLoad={handleLoad}
+          showEventStack={showEventStack}
+          onToggleEventStack={toggleEventStack}
+        />
       </div>
       <InfiniteCanvas 
         onDoubleClick={handleDoubleClick}
         disablePanZoom={!!arrowStart}
         topOffset={toolbarHeight}
+        zoomParams={ZOOM_PARAMS}
       >
         {({ zoom, position }) => (
           <>
